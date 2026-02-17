@@ -1,8 +1,9 @@
+import { Provider, PROVIDER_OPTIONS } from '@/src/shared/purchase.enum';
 import mongoose, { Document, Schema, Types } from 'mongoose'
 
-export interface IInventoryPurchase extends Document {
-  provider: 'Apple' | 'Samsung' | 'BackMarket' | 'Amazon' | 'Google'
-  product: Types.ObjectId;
+export interface IPurchase extends Document {
+  provider: Provider
+  product: Types.ObjectId
   cost: number
   purchaseDate: Date
   notes?: string
@@ -10,10 +11,10 @@ export interface IInventoryPurchase extends Document {
   updatedAt: Date
 }
 
-const InventoryPurchaseSchema: Schema = new Schema({
+const PurchaseSchema: Schema = new Schema({
   provider: {
     type: String,
-    enum: ['Apple', 'Samsung', 'BackMarket', 'Amazon' , 'Google'],
+    enum: PROVIDER_OPTIONS,
     required: true,
   },
   product: {
@@ -38,7 +39,12 @@ const InventoryPurchaseSchema: Schema = new Schema({
 }, {
   timestamps: true,
 })
+// Add indexes for common queries
+PurchaseSchema.index({ product: 1 })
+PurchaseSchema.index({ provider: 1 })
+PurchaseSchema.index({ purchaseDate: -1 })
+PurchaseSchema.index({ product: 1, provider: 1 })
 
-const InventoryPurchase = mongoose.models.InventoryPurchase || mongoose.model<IInventoryPurchase>('InventoryPurchase', InventoryPurchaseSchema)
+const Purchase = mongoose.models.Purchase || mongoose.model<IPurchase>('Purchase', PurchaseSchema)
 
-export default InventoryPurchase
+export default Purchase

@@ -3,159 +3,65 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useIsAdmin } from '@/src/hooks/useIsAdmin'
+import { useCrud } from '@/src/hooks/useCrud'
+import AdminTable, { TableColumn } from '@/src/components/AdminTable'
+import AdminForm, { FormField } from '@/src/components/AdminForm'
+import Alert from '@/src/components/Alert'
+import { Provider, PROVIDER_OPTIONS } from '@/src/shared/purchase.enum'
 
-interface IInventoryPurchase {
-  _id?: string
-  provider: string
-  product: string
-  cost: number
-  purchaseDate: string
-  notes?: string
+interface IModel {
+  _id: string
+  name: string
+  brand: string
+  category: string
 }
 
 interface IProduct {
-  _id?: string;
-  model: string;
-  price: number;
-  storage: "" | "128GB" | "256GB" | "512GB" | "1TB" | "2TB";
-  color:
-    | ""
-    | "Negro Espacial"
-    | "Naranja Cósmico"
-    | "Gris Espacial"
-    | "Grafito"
-    | "Plateado"
-    | "Azul"
-    | "Negro";
-  stock: number;
-  active: boolean;
-  description?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  _id: string
+  model: IModel
+  price: number
+  storage?: string
+  color: string
+  stock: number
+  active: boolean
+  batteryHealth: string
+}
+
+interface IPurchase {
+  _id?: string
+  provider: Provider
+  product: IProduct
+  cost: number
+  purchaseDate: string
+  notes?: string
+  createdAt?: Date
+  updatedAt?: Date
 }
 
 export default function PurchasesAdminPage() {
   const router = useRouter()
   const { isAdmin, isLoading } = useIsAdmin()
-  const [purchases, setPurchases] = useState<IInventoryPurchase[]>([])
-  const [products, setProducts] = useState<IProduct[]>([])
-  const [loading, setLoading] = useState(true)
+  const { items: purchases, loading, error, success, fetch: fetchPurchases, create, update, delete: deleteItem, clearMessages } = useCrud<IPurchase>('/api/purchases')
+  const { items: products, fetch: fetchProducts } = useCrud<IProduct>('/api/products')
   const [isFormVisible, setIsFormVisible] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [selectedPurchase, setSelectedPurchase] = useState<IPurchase | null>(null)
+  const [selectedProvider, setSelectedProvider] = useState<string>('')
 
-  const [formData, setFormData] = useState<IInventoryPurchase>({
-    provider: '',
-    product: '',
-    cost: 0,
-    purchaseDate: '',
-    notes: '',
-  })
+  const scrollToForm = () => {
+    if (typeof window === 'undefined') return
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   useEffect(() => {
     if (isLoading) return
-
     if (!isAdmin) {
       router.push('/')
       return
     }
-    loadPurchases()
-    loadProducts()
-  }, [isAdmin, isLoading, router])
-
-  const loadPurchases = async () => {
-    try {
-      const response = await fetch('/api/purchases')
-      const data = await response.json()
-      setPurchases(data)
-    } catch (err) {
-      setError('Error al cargar compras')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadProducts = async () => {
-    try {
-      const response = await fetch("/api/products");
-      const data = await response.json();
-      setProducts(data);
-    } catch (err) {
-      setError("Error al cargar productos");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setSuccess('')
-
-    if (!formData.provider || !formData.product || formData.cost <= 0) {
-      setError('Por favor completa todos los campos obligatorios')
-      return
-    }
-
-    try {
-      const method = editingId ? 'PUT' : 'POST'
-      const url = editingId ? `/api/purchases/${editingId}` : '/api/purchases'
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      })
-
-      if (!response.ok) {
-        throw new Error('Error al guardar compra')
-      }
-
-      setSuccess(editingId ? 'Compra actualizada' : 'Compra creada')
-      resetForm()
-      loadPurchases()
-    } catch (err) {
-      setError('Error al guardar la compra')
-    }
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar esta compra?')) return
-
-    try {
-      const response = await fetch(`/api/purchases/${id}`, {
-        method: 'DELETE',
-      })
-
-      if (!response.ok) {
-        throw new Error('Error al eliminar')
-      }
-
-      setSuccess('Compra eliminada')
-      loadPurchases()
-    } catch (err) {
-      setError('Error al eliminar la compra')
-    }
-  }
-
-  const handleEdit = (purchase: IInventoryPurchase) => {
-    setFormData(purchase)
-    setEditingId(purchase._id || null)
-    setIsFormVisible(true)
-  }
-
-  const resetForm = () => {
-    setFormData({
-      provider: '',
-      product: '',
-      cost: 0,
-      purchaseDate: '',
-      notes: '',
-    })
-    setEditingId(null)
-    setIsFormVisible(false)
-  }
+    fetchPurchases()
+    fetchProducts()
+  }, [isAdmin, isLoading, router, fetchPurchases, fetchProducts])
 
   const formatPrice = (price: number) => {
     if (price >= 1000) {
@@ -165,148 +71,187 @@ export default function PurchasesAdminPage() {
     return `₡${price}`
   }
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('es-CR')
+  const parseLocalDate = (value: string) => {
+    if (!value) return null
+    const [datePart] = value.split('T')
+    const [year, month, day] = datePart.split('-').map(Number)
+    if (!year || !month || !day) return null
+    return new Date(year, month - 1, day)
   }
 
-  if (loading) {
+  const formatLocalDate = (value: string) => {
+    const date = parseLocalDate(value)
+    return date ? date.toLocaleDateString('es-CR') : ''
+  }
+
+  const formatDateInput = (value: string) => {
+    if (!value) return ''
+    return value.split('T')[0]
+  }
+
+  const handleSubmit = async (data: Record<string, any>) => {
+    if (editingId) {
+      await update(editingId, data)
+    } else {
+      await create(data)
+    }
+    resetForm()
+    fetchPurchases()
+  }
+
+  const handleEdit = (purchase: IPurchase) => {
+    setEditingId(purchase._id || null)
+    setSelectedPurchase(purchase)
+    setIsFormVisible(true)
+    scrollToForm()
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar esta compra?')) return
+    await deleteItem(id)
+    fetchPurchases()
+  }
+
+  const resetForm = () => {
+    setEditingId(null)
+    setSelectedPurchase(null)
+    setSelectedProvider('')
+    setIsFormVisible(false)
+  }
+
+  useEffect(() => {
+    if (selectedPurchase?.provider) {
+      setSelectedProvider(selectedPurchase.provider)
+    }
+  }, [selectedPurchase])
+
+  const providerBrandsMap: Record<string, string[] | null> = {
+    Apple: ['Apple'],
+    Samsung: ['Samsung'],
+    Google: ['Google'],
+    BackMarket: null,
+    Amazon: null,
+  }
+
+  const allowedBrands = selectedProvider ? providerBrandsMap[selectedProvider] : null
+  const filteredProducts = selectedProvider
+    ? products.filter((p) => (allowedBrands ? allowedBrands.includes(p.model.brand) : true))
+    : products
+
+  const productOptions = filteredProducts.map((p: IProduct) => ({
+    value: p._id,
+    label: `${p.model.brand} ${p.model.name} - ${p.color}${p.storage ? ` - ${p.storage}` : ''}${p.batteryHealth ? ` - ${p.batteryHealth}` : ''}`,
+  }))
+
+  const formFields: FormField[] = [
+    {
+      name: 'provider',
+      label: 'Proveedor',
+      type: 'select',
+      required: true,
+      options: PROVIDER_OPTIONS.map((p) => ({ value: p, label: p })),
+      onChange: (value) => setSelectedProvider(value),
+    },
+    {
+      name: 'product',
+      label: 'Producto',
+      type: 'select',
+      required: true,
+      options: productOptions,
+    },
+    {
+      name: 'cost',
+      label: 'Costo',
+      type: 'number',
+      required: true,
+      min: 0,
+      step: 0.01,
+    },
+    {
+      name: 'purchaseDate',
+      label: 'Fecha de Compra',
+      type: 'date',
+      required: true,
+    },
+    {
+      name: 'notes',
+      label: 'Notas',
+      type: 'text',
+      placeholder: 'Notas opcionales',
+      required: false,
+    },
+  ]
+
+  const columns: TableColumn<IPurchase>[] = [
+    {
+      key: 'provider',
+      label: 'Proveedor',
+    },
+    {
+      key: 'product',
+      label: 'Producto',
+      render: (value) => {
+        const product = value as IProduct | null | undefined
+        if (!product?.model) return 'Producto desconocido'
+        return `${product.model.brand} ${product.model.name}`
+      },
+    },
+    {
+      key: 'cost',
+      label: 'Costo',
+      render: (value) => formatPrice(value),
+    },
+    {
+      key: 'purchaseDate',
+      label: 'Fecha',
+      render: (value) => formatLocalDate(value),
+    },
+  ]
+
+  if (loading && purchases.length === 0) {
     return <div className="admin-container"><p>Cargando...</p></div>
   }
 
   return (
     <div className="admin-container">
       <div className="admin-card">
-        <h1>Compras de Inventario</h1>
+        <h1>Gestionar Compras</h1>
 
-        {error && <div className="error-message">{error}</div>}
-        {success && <div className="success-message">{success}</div>}
+        {error && <Alert type="error" message={error} onClose={clearMessages} />}
+        {success && <Alert type="success" message={success} onClose={clearMessages} />}
 
-        <button 
-          onClick={() => isFormVisible ? resetForm() : setIsFormVisible(true)}
+        <button
+          onClick={() => (isFormVisible ? resetForm() : setIsFormVisible(true))}
           className="admin-button-primary"
         >
           {isFormVisible ? 'Cancelar' : 'Registrar Nueva Compra'}
         </button>
 
         {isFormVisible && (
-          <form onSubmit={handleSubmit} className="admin-form">
-            <div className="form-row">
-              <div className="form-group">
-                <label>Proveedor *</label>
-                <select value={formData.provider} onChange={(e) => setFormData({ ...formData, provider: e.target.value })}>
-                  <option value="" disabled>Seleccionar proveedor</option>
-                  <option value="Apple">Apple</option>
-                  <option value="Samsung">Samsung</option>
-                  <option value="BackMarket">BackMarket</option>
-                  <option value="Amazon">Amazon</option>
-                  <option value="Google">Google</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Producto *</label>
-                <select value={formData.product} onChange={(e) => setFormData({ ...formData, product: e.target.value })}>
-                  <option value="" disabled>Seleccionar producto</option>
-                  {products.map((product) => (
-                    <option key={product._id} value={product.model}>
-                      {product.model}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Costo *</label>
-                <input
-                  type="number"
-                  value={formData.cost}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      cost: parseFloat(e.target.value),
-                    })
-                  }
-                  placeholder="0"
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>Fecha de Compra *</label>
-                <input
-                  type="date"
-                  value={formData.purchaseDate}
-                  onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>Notas</label>
-                <input
-                  type="text"
-                  value={formData.notes || ''}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Notas opcionales"
-                />
-              </div>
-            </div>
-
-            <button type="submit" className="admin-button-success">
-              {editingId ? 'Actualizar Compra' : 'Registrar Compra'}
-            </button>
-          </form>
+          <AdminForm
+            fields={formFields}
+            initialValues={selectedPurchase ? {
+              provider: selectedPurchase.provider,
+              product: selectedPurchase.product?._id,
+              cost: selectedPurchase.cost,
+              purchaseDate: formatDateInput(selectedPurchase.purchaseDate),
+              notes: selectedPurchase.notes || '',
+            } : {}}
+            onSubmit={handleSubmit}
+            onCancel={resetForm}
+            isEditing={!!editingId}
+          />
         )}
 
-        <div className="products-table">
-          <h2>Compras Registradas ({purchases.length})</h2>
-          {purchases.length > 0 ? (
-            <table>
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Proveedor</th>
-                  <th>Marca</th>
-                  <th>Modelo</th>
-                  <th>Cantidad</th>
-                  <th>Costo Unitario</th>
-                  <th>Total</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {purchases.map((purchase) => (
-                  <tr key={purchase._id}>
-                    <td>{purchase.provider}</td>
-                    <td>{purchase.product}</td>
-                    <td>{formatPrice(purchase.cost)}</td>
-                    <td>{formatDate(purchase.purchaseDate)}</td>
-                    <td>{purchase.notes}</td>
-                    <td>
-                      <button 
-                        onClick={() => handleEdit(purchase)}
-                        className="admin-button-edit"
-                      >
-                        Editar
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(purchase._id || '')}
-                        className="admin-button-delete"
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p className="empty-message">No hay compras registradas</p>
-          )}
-        </div>
+        <h2>Compras Registradas ({purchases.length})</h2>
+        <AdminTable<IPurchase>
+          columns={columns}
+          data={purchases}
+          loading={loading}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          emptyMessage="No hay compras registradas"
+        />
       </div>
     </div>
   )

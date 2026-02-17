@@ -3,75 +3,69 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useIsAdmin } from "@/src/hooks/useIsAdmin";
+import { useCrud } from "@/src/hooks/useCrud";
+import AdminTable, { TableColumn } from "@/src/components/AdminTable";
+import AdminForm, { FormField } from "@/src/components/AdminForm";
+import Alert from "@/src/components/Alert";
+import { Brand, BRAND_OPTIONS, Category, CATEGORY_OPTIONS } from "@/src/shared/model.enum";
+import { Battery, BATTERY_OPTIONS, Color, COLOR_OPTIONS, Storage, STORAGE_OPTIONS, Condition, CONDITION_OPTIONS } from "@/src/shared/product.enum";
 
 interface IModel {
   _id: string;
   name: string;
-  brand: "Apple" | "Samsung" | "Google";
-  category: "Smartphone" | "Watch" | "Laptop" | "Tablet" | "Audio";
+  brand: Brand;
+  category: Category;
 }
 
 interface IProduct {
   _id?: string;
-  model: string;
+  model: IModel | string;
   price: number;
-  storage: "" | "128GB" | "256GB" | "512GB" | "1TB" | "2TB";
-  color:
-    | ""
-    | "Negro Espacial"
-    | "Naranja Cósmico"
-    | "Gris Espacial"
-    | "Grafito"
-    | "Plateado"
-    | "Azul"
-    | "Negro";
+  storage?: Storage;
+  color: Color;
   stock: number;
   active: boolean;
+  batteryHealth?: Battery;
+  condition: Condition;
   description?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-interface IProductPopulated extends Omit<IProduct, "model"> {
-  model: IModel;
-}
-
 export default function ProductsAdminPage() {
   const router = useRouter();
   const { isAdmin, isLoading } = useIsAdmin();
-  const [products, setProducts] = useState<IProductPopulated[]>([]);
-  const [models, setModels] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { items: products, loading: productsLoading, error, success, fetch: fetchProducts, create, update, delete: deleteItem, clearMessages } = useCrud<IProduct>("/api/products");
+  const { items: models, fetch: fetchModels } = useCrud<IModel>("/api/models");
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null);
+  const [brandFilter, setBrandFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
 
-  const [formData, setFormData] = useState<IProduct>({
-    model: "",
-    price: 0,
-    storage: "",
-    color: "",
-    stock: 0,
-    active: false,
-    description: "",
-  });
-
-  const [filters, setFilters] = useState({
-    brand: "",
-    category: "",
-  });
+  const scrollToForm = () => {
+    if (typeof window === 'undefined') return;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   useEffect(() => {
     if (isLoading) return;
-
     if (!isAdmin) {
       router.push("/");
       return;
     }
-    loadProducts();
-    loadModels();
-  }, [isAdmin, isLoading, router]);
+    fetchProducts();
+    fetchModels();
+  }, [isAdmin, isLoading, router, fetchProducts, fetchModels]);
+
+  const filteredModels = models.filter((model: IModel) => {
+    const brandMatch = brandFilter ? model.brand === brandFilter : true;
+    const categoryMatch = categoryFilter
+      ? model.category === categoryFilter
+      : true;
+
+    return brandMatch && categoryMatch;
+  });
 
   const formatPrice = (price: number) => {
     if (price >= 1000) {
@@ -81,129 +75,755 @@ export default function ProductsAdminPage() {
     return `₡${price}`;
   };
 
-  const loadProducts = async () => {
-    try {
-      const response = await fetch("/api/products");
-      const data = await response.json();
-      setProducts(data);
-    } catch (err) {
-      setError("Error al cargar productos");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const generateIphones85Jpg = () => {
+    const title = 'iPhones seminuevos';
+    const subtitle = 'Batería entre 80%-90% | 0 detalles';
 
-  const loadModels = async () => {
-    try {
-      const response = await fetch("/api/models");
-      const data = await response.json();
-      setModels(data);
-    } catch (err) {
-      setError("Error al cargar modelos");
-    }
-  };
+    const filtered = products.filter((product) => {
+      if (!product.active) return false;
+      if (product.condition !== 'Seminuevo') return false;
+      if (product.batteryHealth !== '85%') return false;
+      if (!product.model || typeof product.model !== 'object') return false;
+      const model = product.model as IModel;
+      return model.brand === 'Apple' && model.name.toLowerCase().includes('iphone');
+    });
 
-  const filteredModels = models.filter((model: IModel) => {
-    const brandMatch = filters.brand ? model.brand === filters.brand : true
-    const categoryMatch = filters.category
-      ? model.category === filters.category
-      : true
-
-    return brandMatch && categoryMatch
-  })
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    if (
-      !formData.model ||
-      formData.price <= 0 ||
-      !formData.storage ||
-      !formData.color ||
-      formData.stock < 0
-    ) {
-      setError("Por favor completa todos los campos obligatorios");
-      return;
-    }
-
-    try {
-      const method = editingId ? "PUT" : "POST";
-      const url = editingId ? `/api/products/${editingId}` : "/api/products";
-
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Error al guardar producto");
+    const grouped = new Map<string, { name: string; price: number }>();
+    filtered.forEach((product) => {
+      const model = product.model as IModel;
+      const key = model._id;
+      const existing = grouped.get(key);
+      if (!existing || product.price < existing.price) {
+        grouped.set(key, {
+          name: `${model.brand} ${model.name}`,
+          price: product.price,
+        });
       }
+    });
 
-      setSuccess(editingId ? "Producto actualizado" : "Producto creado");
-      resetForm();
-      loadProducts();
-    } catch (err) {
-      setError("Error al guardar el producto");
+    const rows = Array.from(grouped.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+    );
+
+    const width = 1200;
+    const rowHeight = 54;
+    const headerHeight = 70;
+    const padding = 60;
+    const tableTop = 210;
+    const tableHeight = headerHeight + Math.max(rows.length, 1) * rowHeight;
+    const height = tableTop + tableHeight + padding;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#f6f6f2';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '700 46px "Segoe UI", Arial, sans-serif';
+    ctx.fillText(title, padding, 90);
+
+    ctx.fillStyle = '#334155';
+    ctx.font = '400 26px "Segoe UI", Arial, sans-serif';
+    ctx.fillText(subtitle, padding, 135);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '600 24px "Segoe UI", Arial, sans-serif';
+    ctx.fillText('Modelo', padding, tableTop + 46);
+    ctx.fillText('Precio', width - padding - 160, tableTop + 46);
+
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padding, tableTop + headerHeight);
+    ctx.lineTo(width - padding, tableTop + headerHeight);
+    ctx.stroke();
+
+    ctx.font = '400 22px "Segoe UI", Arial, sans-serif';
+    ctx.fillStyle = '#1f2937';
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+
+    const list = rows.length > 0 ? rows : [{ name: 'Sin productos activos', price: 0 }];
+    list.forEach((row, index) => {
+      const y = tableTop + headerHeight + rowHeight * index + 36;
+      ctx.fillText(row.name, padding, y);
+      ctx.textAlign = 'right';
+      ctx.fillText(row.price ? formatPrice(row.price) : '-', width - padding, y);
+      ctx.textAlign = 'left';
+
+      const lineY = tableTop + headerHeight + rowHeight * (index + 1);
+      ctx.beginPath();
+      ctx.moveTo(padding, lineY);
+      ctx.lineTo(width - padding, lineY);
+      ctx.stroke();
+    });
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'iphones-seminuevos.jpg';
+    link.click();
+  };
+
+  const generateIphonesPremiumJpg = () => {
+    const title = 'iPhones premium';
+    const subtitle = 'Batería entre 90%-100% | 0 detalles';
+
+    const filtered = products.filter((product) => {
+      if (!product.active) return false;
+      if (product.condition !== 'Seminuevo') return false;
+      const batteryValue = String(product.batteryHealth ?? '').replace('%', '').trim();
+      const batteryNumber = Number(batteryValue);
+      if (!Number.isFinite(batteryNumber)) return false;
+      if (batteryNumber !== 95 && batteryNumber !== 100) return false;
+      if (!product.model || typeof product.model !== 'object') return false;
+      const model = product.model as IModel;
+      const isIphone =
+        model.category === 'Smartphone' || model.name.toLowerCase().includes('iphone');
+      return model.brand === 'Apple' && isIphone;
+    });
+
+    const grouped = new Map<string, { name: string; price: number }>();
+    filtered.forEach((product) => {
+      const model = product.model as IModel;
+      const key = model._id;
+      const existing = grouped.get(key);
+      if (!existing || product.price < existing.price) {
+        grouped.set(key, {
+          name: `${model.brand} ${model.name}`,
+          price: product.price,
+        });
+      }
+    });
+
+    const rows = Array.from(grouped.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+    );
+
+    const width = 1200;
+    const rowHeight = 54;
+    const headerHeight = 70;
+    const padding = 60;
+    const tableTop = 210;
+    const tableHeight = headerHeight + Math.max(rows.length, 1) * rowHeight;
+    const height = tableTop + tableHeight + padding;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#f6f6f2';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '700 46px "Segoe UI", Arial, sans-serif';
+    ctx.fillText(title, padding, 90);
+
+    ctx.fillStyle = '#334155';
+    ctx.font = '400 26px "Segoe UI", Arial, sans-serif';
+    ctx.fillText(subtitle, padding, 135);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '600 24px "Segoe UI", Arial, sans-serif';
+    ctx.fillText('Modelo', padding, tableTop + 46);
+    ctx.fillText('Precio', width - padding - 160, tableTop + 46);
+
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padding, tableTop + headerHeight);
+    ctx.lineTo(width - padding, tableTop + headerHeight);
+    ctx.stroke();
+
+    ctx.font = '400 22px "Segoe UI", Arial, sans-serif';
+    ctx.fillStyle = '#1f2937';
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+
+    const list = rows.length > 0 ? rows : [{ name: 'Sin productos activos', price: 0 }];
+    list.forEach((row, index) => {
+      const y = tableTop + headerHeight + rowHeight * index + 36;
+      ctx.fillText(row.name, padding, y);
+      ctx.textAlign = 'right';
+      ctx.fillText(row.price ? formatPrice(row.price) : '-', width - padding, y);
+      ctx.textAlign = 'left';
+
+      const lineY = tableTop + headerHeight + rowHeight * (index + 1);
+      ctx.beginPath();
+      ctx.moveTo(padding, lineY);
+      ctx.lineTo(width - padding, lineY);
+      ctx.stroke();
+    });
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'iphones-premium.jpg';
+    link.click();
+  };
+
+  const generateIphonesNuevosJpg = () => {
+    const title = 'iPhones nuevos';
+    const subtitle = '';
+
+    const filtered = products.filter((product) => {
+      if (!product.active) return false;
+      if (product.condition !== 'Nuevo') return false;
+      if (!product.model || typeof product.model !== 'object') return false;
+      const model = product.model as IModel;
+      return model.brand === 'Apple' && model.name.toLowerCase().includes('iphone');
+    });
+
+    const grouped = new Map<string, { name: string; price: number }>();
+    filtered.forEach((product) => {
+      const model = product.model as IModel;
+      const key = model._id;
+      const existing = grouped.get(key);
+      if (!existing || product.price < existing.price) {
+        grouped.set(key, {
+          name: `${model.brand} ${model.name}`,
+          price: product.price,
+        });
+      }
+    });
+
+    const rows = Array.from(grouped.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+    );
+
+    const width = 1200;
+    const rowHeight = 54;
+    const headerHeight = 70;
+    const padding = 60;
+    const tableTop = 210;
+    const tableHeight = headerHeight + Math.max(rows.length, 1) * rowHeight;
+    const height = tableTop + tableHeight + padding;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#f6f6f2';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '700 46px "Segoe UI", Arial, sans-serif';
+    ctx.fillText(title, padding, 90);
+
+    if (subtitle) {
+      ctx.fillStyle = '#334155';
+      ctx.font = '400 26px "Segoe UI", Arial, sans-serif';
+      ctx.fillText(subtitle, padding, 135);
     }
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '600 24px "Segoe UI", Arial, sans-serif';
+    ctx.fillText('Modelo', padding, tableTop + 46);
+    ctx.fillText('Precio', width - padding - 160, tableTop + 46);
+
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padding, tableTop + headerHeight);
+    ctx.lineTo(width - padding, tableTop + headerHeight);
+    ctx.stroke();
+
+    ctx.font = '400 22px "Segoe UI", Arial, sans-serif';
+    ctx.fillStyle = '#1f2937';
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+
+    const list = rows.length > 0 ? rows : [{ name: 'Sin productos activos', price: 0 }];
+    list.forEach((row, index) => {
+      const y = tableTop + headerHeight + rowHeight * index + 36;
+      ctx.fillText(row.name, padding, y);
+      ctx.textAlign = 'right';
+      ctx.fillText(row.price ? formatPrice(row.price) : '-', width - padding, y);
+      ctx.textAlign = 'left';
+
+      const lineY = tableTop + headerHeight + rowHeight * (index + 1);
+      ctx.beginPath();
+      ctx.moveTo(padding, lineY);
+      ctx.lineTo(width - padding, lineY);
+      ctx.stroke();
+    });
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'iphones-nuevos.jpg';
+    link.click();
+  };
+
+  const generateImmediateDeliveryJpg = () => {
+    const title = 'Entrega inmediata';
+    const subtitle = '0 detalles';
+
+    const filtered = products.filter((product) => {
+      if (!product.active) return false;
+      if (product.stock <= 0) return false;
+      if (!product.model || typeof product.model !== 'object') return false;
+      return true;
+    });
+
+    const grouped = new Map<string, { name: string; price: number; battery: string }>();
+    filtered.forEach((product) => {
+      const model = product.model as IModel;
+      const key = model._id;
+      const existing = grouped.get(key);
+      if (!existing || product.price < existing.price) {
+        const batteryValue = product.batteryHealth ? product.batteryHealth : '-';
+        grouped.set(key, {
+          name: `${model.brand} ${model.name}`,
+          price: product.price,
+          battery: batteryValue,
+        });
+      }
+    });
+
+    const rows = Array.from(grouped.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+    );
+
+    const width = 1200;
+    const rowHeight = 54;
+    const headerHeight = 70;
+    const padding = 60;
+    const tableTop = 210;
+    const tableHeight = headerHeight + Math.max(rows.length, 1) * rowHeight;
+    const height = tableTop + tableHeight + padding;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#f6f6f2';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '700 46px "Segoe UI", Arial, sans-serif';
+    ctx.fillText(title, padding, 90);
+
+    if (subtitle) {
+      ctx.fillStyle = '#334155';
+      ctx.font = '400 26px "Segoe UI", Arial, sans-serif';
+      ctx.fillText(subtitle, padding, 135);
+    }
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '600 24px "Segoe UI", Arial, sans-serif';
+    const batteryX = width - padding - 320;
+    ctx.fillText('Modelo', padding, tableTop + 46);
+    ctx.fillText('Batería', batteryX, tableTop + 46);
+    ctx.fillText('Precio', width - padding - 160, tableTop + 46);
+
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padding, tableTop + headerHeight);
+    ctx.lineTo(width - padding, tableTop + headerHeight);
+    ctx.stroke();
+
+    ctx.font = '400 22px "Segoe UI", Arial, sans-serif';
+    ctx.fillStyle = '#1f2937';
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+
+    const list = rows.length > 0 ? rows : [{ name: 'Sin productos activos', price: 0, battery: '-' }];
+    list.forEach((row, index) => {
+      const y = tableTop + headerHeight + rowHeight * index + 36;
+      ctx.fillText(row.name, padding, y);
+      ctx.textAlign = 'left';
+      ctx.fillText(row.battery, batteryX, y);
+      ctx.textAlign = 'right';
+      ctx.fillText(row.price ? formatPrice(row.price) : '-', width - padding, y);
+      ctx.textAlign = 'left';
+
+      const lineY = tableTop + headerHeight + rowHeight * (index + 1);
+      ctx.beginPath();
+      ctx.moveTo(padding, lineY);
+      ctx.lineTo(width - padding, lineY);
+      ctx.stroke();
+    });
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'entrega-inmediata.jpg';
+    link.click();
+  };
+
+  const generateSamsungSeminuevosJpg = () => {
+    const title = 'Samsungs seminuevos';
+    const subtitle = '0 detalles';
+
+    const filtered = products.filter((product) => {
+      if (!product.active) return false;
+      if (product.condition !== 'Seminuevo') return false;
+      if (!product.model || typeof product.model !== 'object') return false;
+      const model = product.model as IModel;
+      return model.brand === 'Samsung';
+    });
+
+    const grouped = new Map<string, { name: string; price: number; battery: string }>();
+    filtered.forEach((product) => {
+      const model = product.model as IModel;
+      const key = model._id;
+      const existing = grouped.get(key);
+      if (!existing || product.price < existing.price) {
+        grouped.set(key, {
+          name: `${model.brand} ${model.name}`,
+          price: product.price,
+          battery: product.batteryHealth || '-',
+        });
+      }
+    });
+
+    const rows = Array.from(grouped.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+    );
+
+    const width = 1200;
+    const rowHeight = 54;
+    const headerHeight = 70;
+    const padding = 60;
+    const tableTop = 210;
+    const tableHeight = headerHeight + Math.max(rows.length, 1) * rowHeight;
+    const height = tableTop + tableHeight + padding;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#f6f6f2';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '700 46px "Segoe UI", Arial, sans-serif';
+    ctx.fillText(title, padding, 90);
+
+    ctx.fillStyle = '#334155';
+    ctx.font = '400 26px "Segoe UI", Arial, sans-serif';
+    ctx.fillText(subtitle, padding, 135);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '600 24px "Segoe UI", Arial, sans-serif';
+    ctx.fillText('Modelo', padding, tableTop + 46);
+    ctx.fillText('Precio', width - padding - 160, tableTop + 46);
+
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padding, tableTop + headerHeight);
+    ctx.lineTo(width - padding, tableTop + headerHeight);
+    ctx.stroke();
+
+    ctx.font = '400 22px "Segoe UI", Arial, sans-serif';
+    ctx.fillStyle = '#1f2937';
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+
+    const list = rows.length > 0 ? rows : [{ name: 'Sin productos activos', price: 0 }];
+    list.forEach((row, index) => {
+      const y = tableTop + headerHeight + rowHeight * index + 36;
+      ctx.fillText(row.name, padding, y);
+      ctx.textAlign = 'right';
+      ctx.fillText(row.price ? formatPrice(row.price) : '-', width - padding, y);
+      ctx.textAlign = 'left';
+
+      const lineY = tableTop + headerHeight + rowHeight * (index + 1);
+      ctx.beginPath();
+      ctx.moveTo(padding, lineY);
+      ctx.lineTo(width - padding, lineY);
+      ctx.stroke();
+    });
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'samsungs-seminuevos.jpg';
+    link.click();
+  };
+
+  const generateSamsungNuevosJpg = () => {
+    const title = 'Samsungs nuevos';
+    const subtitle = '';
+
+    const filtered = products.filter((product) => {
+      if (!product.active) return false;
+      if (product.condition !== 'Nuevo') return false;
+      if (!product.model || typeof product.model !== 'object') return false;
+      const model = product.model as IModel;
+      return model.brand === 'Samsung';
+    });
+
+    const grouped = new Map<string, { name: string; price: number }>();
+    filtered.forEach((product) => {
+      const model = product.model as IModel;
+      const key = model._id;
+      const existing = grouped.get(key);
+      if (!existing || product.price < existing.price) {
+        grouped.set(key, {
+          name: `${model.brand} ${model.name}`,
+          price: product.price,
+        });
+      }
+    });
+
+    const rows = Array.from(grouped.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+    );
+
+    const width = 1200;
+    const rowHeight = 54;
+    const headerHeight = 70;
+    const padding = 60;
+    const tableTop = 210;
+    const tableHeight = headerHeight + Math.max(rows.length, 1) * rowHeight;
+    const height = tableTop + tableHeight + padding;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#f6f6f2';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '700 46px "Segoe UI", Arial, sans-serif';
+    ctx.fillText(title, padding, 90);
+
+    if (subtitle) {
+      ctx.fillStyle = '#334155';
+      ctx.font = '400 26px "Segoe UI", Arial, sans-serif';
+      ctx.fillText(subtitle, padding, 135);
+    }
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '600 24px "Segoe UI", Arial, sans-serif';
+    ctx.fillText('Modelo', padding, tableTop + 46);
+    ctx.fillText('Precio', width - padding - 160, tableTop + 46);
+
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padding, tableTop + headerHeight);
+    ctx.lineTo(width - padding, tableTop + headerHeight);
+    ctx.stroke();
+
+    ctx.font = '400 22px "Segoe UI", Arial, sans-serif';
+    ctx.fillStyle = '#1f2937';
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+
+    const list = rows.length > 0 ? rows : [{ name: 'Sin productos activos', price: 0 }];
+    list.forEach((row, index) => {
+      const y = tableTop + headerHeight + rowHeight * index + 36;
+      ctx.fillText(row.name, padding, y);
+      ctx.textAlign = 'right';
+      ctx.fillText(row.price ? formatPrice(row.price) : '-', width - padding, y);
+      ctx.textAlign = 'left';
+
+      const lineY = tableTop + headerHeight + rowHeight * (index + 1);
+      ctx.beginPath();
+      ctx.moveTo(padding, lineY);
+      ctx.lineTo(width - padding, lineY);
+      ctx.stroke();
+    });
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'samsungs-nuevos.jpg';
+    link.click();
+  };
+
+  const generateAllJpgs = () => {
+    generateIphones85Jpg();
+    generateIphonesPremiumJpg();
+    generateIphonesNuevosJpg();
+    generateImmediateDeliveryJpg();
+    generateSamsungSeminuevosJpg();
+    generateSamsungNuevosJpg();
+  };
+
+  const handleSubmit = async (data: Record<string, any>) => {
+    if (editingId) {
+      await update(editingId, data);
+    } else {
+      await create(data);
+    }
+    resetForm();
+    fetchProducts();
+  };
+
+  const handleEdit = (product: IProduct) => {
+    setEditingId(product._id || null);
+    setSelectedProduct(product);
+    setIsFormVisible(true);
+    scrollToForm();
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Estás seguro de que quieres eliminar este producto?"))
-      return;
-
-    try {
-      const response = await fetch(`/api/products/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Error al eliminar");
-      }
-
-      setSuccess("Producto eliminado");
-      loadProducts();
-    } catch (err) {
-      setError("Error al eliminar el producto");
-    }
-  };
-
-  const handleEdit = (product: IProductPopulated) => {
-    setFormData({
-      model: product.model._id,
-      price: product.price,
-      storage: product.storage,
-      color: product.color,
-      stock: product.stock,
-      active: product.active,
-      description: product.description ?? "",
-    });
-
-    setEditingId(product._id || null);
-    setIsFormVisible(true);
+    if (!confirm("¿Estás seguro de que quieres eliminar este producto?")) return;
+    await deleteItem(id);
+    fetchProducts();
   };
 
   const resetForm = () => {
-    setFormData({
-      model: "",
-      price: 0,
-      storage: "",
-      color: "",
-      stock: 0,
-      active: false,
-      description: "",
-    });
     setEditingId(null);
+    setSelectedProduct(null);
     setIsFormVisible(false);
   };
 
-  if (loading) {
-    return (
-      <div className="admin-container">
-        <p>Cargando...</p>
-      </div>
-    );
+  const sortedModels = [...filteredModels].sort((a, b) => {
+    const brandCompare = (a.brand || '').localeCompare(b.brand || '', 'es', { sensitivity: 'base' });
+    if (brandCompare !== 0) return brandCompare;
+    return (a.name || '').localeCompare(b.name || '', 'es', { sensitivity: 'base' });
+  });
+
+  const modelOptions = sortedModels.map((m) => ({
+    value: m._id,
+    label: `${m.brand} ${m.name}`,
+  }));
+
+  const formFields: FormField[] = [
+    {
+      name: "model",
+      label: "Modelo",
+      type: "select",
+      required: true,
+      options: modelOptions,
+    },
+    {
+      name: "price",
+      label: "Precio",
+      type: "number",
+      required: true,
+      min: 0,
+      step: 0.01,
+      value: 0,
+    },
+    {
+      name: "storage",
+      label: "Almacenamiento (opcional)",
+      type: "select",
+      required: false,
+      options: STORAGE_OPTIONS.map((s) => ({ value: s, label: s })),
+    },
+    {
+      name: "color",
+      label: "Color",
+      type: "select",
+      required: true,
+      options: COLOR_OPTIONS.map((c) => ({ value: c, label: c })),
+    },
+    {
+      name: "stock",
+      label: "Stock",
+      type: "number",
+      required: true,
+      min: 0,
+      value: 0,
+    },
+    {
+      name: "batteryHealth",
+      label: "Estado de Batería (opcional)",
+      type: "select",
+      required: false,
+      options: BATTERY_OPTIONS.map((b) => ({ value: b, label: b })),
+    },
+    {
+      name: "condition",
+      label: "Condición",
+      type: "select",
+      required: true,
+      options: CONDITION_OPTIONS.map((c) => ({ value: c, label: c })),
+    },
+    {
+      name: "active",
+      label: "Activo",
+      type: "checkbox",
+      required: false,
+    },
+    {
+      name: "description",
+      label: "Descripción",
+      type: "text",
+      required: false,
+    },
+  ];
+
+  const columns: TableColumn<IProduct>[] = [
+    {
+      key: "model",
+      label: "Modelo",
+      render: (value) => {
+        const model = value as IModel;
+        return typeof model === "object" ? `${model.brand} ${model.name}` : value;
+      },
+    },
+    {
+      key: "price",
+      label: "Precio",
+      render: (value) => formatPrice(value),
+    },
+    {
+      key: "storage",
+      label: "Almacenamiento",
+      render: (value) => value || '',
+    },
+    {
+      key: "color",
+      label: "Color",
+    },
+    {
+      key: "stock",
+      label: "Stock",
+    },
+    {
+      key: "batteryHealth",
+      label: "Batería",
+    },
+    {
+      key: "condition",
+      label: "Condición",
+    },
+    {
+      key: "active",
+      label: "Estado",
+      render: (value) => (value ? "✓ Activo" : "✗ Inactivo"),
+    },
+  ];
+
+  const sortedProducts = [...products].sort((a, b) => {
+    const getModelLabel = (product: IProduct) => {
+      const model = product.model
+      if (typeof model === "object" && model) {
+        return `${model.brand} ${model.name}`
+      }
+      return model || ""
+    }
+
+    return getModelLabel(a).localeCompare(getModelLabel(b), "es", { sensitivity: "base" })
+  })
+
+  if (productsLoading && products.length === 0) {
+    return <div className="admin-container"><p>Cargando...</p></div>;
   }
 
   return (
@@ -211,8 +831,8 @@ export default function ProductsAdminPage() {
       <div className="admin-card">
         <h1>Gestionar Productos</h1>
 
-        {error && <div className="error-message">{error}</div>}
-        {success && <div className="success-message">{success}</div>}
+        {error && <Alert type="error" message={error} onClose={clearMessages} />}
+        {success && <Alert type="success" message={success} onClose={clearMessages} />}
 
         <button
           onClick={() => (isFormVisible ? resetForm() : setIsFormVisible(true))}
@@ -220,202 +840,76 @@ export default function ProductsAdminPage() {
         >
           {isFormVisible ? "Cancelar" : "Agregar Nuevo Producto"}
         </button>
+        <button
+          onClick={generateAllJpgs}
+          className="admin-button-primary"
+          type="button"
+        >
+          Generar todas las imagenes JPG
+        </button>
 
         {isFormVisible && (
           <>
             <div className="form-row">
               <div className="form-group">
-                <label>Filtrar por marca</label>
+                <label>Filtrar por Marca</label>
                 <select
-                  value={filters.brand}
-                  onChange={(e) =>
-                    setFilters({ ...filters, brand: e.target.value })
-                  }
+                  value={brandFilter}
+                  onChange={(e) => setBrandFilter(e.target.value)}
                 >
                   <option value="">Todas</option>
-                  <option value="Apple">Apple</option>
-                  <option value="Samsung">Samsung</option>
-                  <option value="Google">Google</option>
+                  {BRAND_OPTIONS.map((brand) => (
+                    <option key={brand} value={brand}>
+                      {brand}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="form-group">
-                <label>Filtrar por categoría</label>
+                <label>Filtrar por Categoría</label>
                 <select
-                  value={filters.category}
-                  onChange={(e) =>
-                    setFilters({ ...filters, category: e.target.value })
-                  }
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
                 >
                   <option value="">Todas</option>
-                  <option value="Smartphone">Smartphone</option>
-                  <option value="Watch">Watch</option>
-                  <option value="Laptop">Laptop</option>
-                  <option value="Tablet">Tablet</option>
-                  <option value="Audio">Audio</option>
+                  {CATEGORY_OPTIONS.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
-            <form onSubmit={handleSubmit} className="admin-form">
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Modelo *</label>
-                  <select
-                    value={formData.model}
-                    onChange={(e) =>
-                      setFormData({ ...formData, model: e.target.value })
-                    }
-                  >
-                    <option value="" disabled>
-                      Selecciona un modelo
-                    </option>
-                    {filteredModels.map((model) => (
-                      <option key={model._id} value={model._id}>
-                        {model.brand} {model.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Precio *</label>
-                  <input
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        price: parseFloat(e.target.value),
-                      })
-                    }
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Almacenamiento *</label>
-                  <select
-                    value={formData.storage}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        storage: e.target.value as "128GB" | "256GB" | "512GB" | "1TB" | "2TB",
-                      })
-                    }
-                  >
-                    <option value="" disabled>Selecciona almacenamiento</option>
-                    <option value="128GB">128GB</option>
-                    <option value="256GB">256GB</option>
-                    <option value="512GB">512GB</option>
-                    <option value="1TB">1TB</option>
-                    <option value="2TB">2TB</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Color *</label>
-                  <select
-                    value={formData.color}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        color: e.target.value as "Negro Espacial" | "Naranja Cósmico" | "Gris Espacial" | "Grafito" | "Plateado" | "Azul" | "Negro",
-                      })
-                    }
-                  >
-                    <option value="" disabled>Selecciona un color</option>
-                    <option value="Negro Espacial">Negro Espacial</option>
-                    <option value="Naranja Cósmico">Naranja Cósmico</option>
-                    <option value="Gris Espacial">Gris Espacial</option>
-                    <option value="Grafito">Grafito</option>
-                    <option value="Plateado">Plateado</option>
-                    <option value="Azul">Azul</option>
-                    <option value="Negro">Negro</option>
-                  </select>
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Stock *</label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={formData.stock}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        stock: Number(e.target.value),
-                      })
-                    }
-                    placeholder="0"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Descripción</label>
-                  <input
-                    type="text"
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        description: e.target.value,
-                      })
-                    }
-                    placeholder="Opcional"
-                  />
-                </div>
-              </div>
 
-              <button type="submit" className="admin-button-success">
-                {editingId ? "Actualizar Producto" : "Crear Producto"}
-              </button>
-            </form>
+            <AdminForm
+              fields={formFields}
+              initialValues={selectedProduct ? {
+                model: typeof selectedProduct.model === 'object' ? selectedProduct.model._id : selectedProduct.model,
+                price: selectedProduct.price,
+                storage: selectedProduct.storage ?? '',
+                color: selectedProduct.color,
+                stock: selectedProduct.stock,
+                batteryHealth: selectedProduct.batteryHealth ?? '',
+                condition: selectedProduct.condition,
+                active: selectedProduct.active,
+                description: selectedProduct.description || '',
+              } : {}}
+              onSubmit={handleSubmit}
+              onCancel={resetForm}
+              isEditing={!!editingId}
+            />
           </>
         )}
 
-        <div className="products-table">
-          <h2>Productos ({products.length})</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Marca</th>
-                <th>Modelo</th>
-                <th>Precio</th>
-                <th>Almacenamiento</th>
-                <th>Color</th>
-                <th>Categoría</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((product) => (
-                <tr key={product._id}>
-                  <td>{product.model.brand}</td>
-                  <td>{product.model.name}</td>
-                  <td>{product.model.category}</td>
-                  <td>{formatPrice(product.price)}</td>
-                  <td>{product.storage}</td>
-                  <td>{product.color}</td>
-                  <td>
-                    <button
-                      onClick={() => handleEdit(product)}
-                      className="admin-button-edit"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => handleDelete(product._id || "")}
-                      className="admin-button-delete"
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {products.length === 0 && (
-            <p className="empty-message">No hay productos</p>
-          )}
-        </div>
+        <h2>Productos Registrados ({products.length})</h2>
+        <AdminTable<IProduct>
+          columns={columns}
+          data={sortedProducts}
+          loading={productsLoading}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          emptyMessage="No hay productos registrados"
+        />
       </div>
     </div>
   );

@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar el usuario por email
-    const user = await User.findOne({ email: email.toLowerCase() })
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password')
     if (!user) {
       return NextResponse.json(
         { error: 'Correo electrónico o contraseña incorrectos' },

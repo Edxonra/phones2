@@ -3,10 +3,10 @@ export default function Footer() {
     <footer className="sticky-footer">
       <div className="footer-content">
         <div className="footer-left">
-          Copyright © 2026 L&E. Todos los derechos reservados.
+          © 2026 L&E.
         </div>
-        <div className="footer-right">
-          Costa Rica
+        <div className="footer-center">
+          <a href="https://wa.me/50661826821" target="_blank" rel="noopener noreferrer">Contactanos</a>
         </div>
       </div>
     </footer>

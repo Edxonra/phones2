@@ -1,6 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
-import Products from '@/src/lib/models/Product'
+import { NextRequest } from 'next/server'
+import Product from '@/src/lib/models/Product'
 import connectToDatabase from '@/src/lib/mongodb'
+import { sendSuccess, sendError, sendMessage } from '@/src/lib/api/response'
+import { validatePositiveNumber, validateNonNegativeNumber, validateEnum, validateRequired, ValidationException } from '@/src/lib/api/validation'
+import { STORAGE_OPTIONS, COLOR_OPTIONS, BATTERY_OPTIONS, CONDITION_OPTIONS } from '@/src/shared/product.enum'
+import { NextResponse } from 'next/server'
 
 export async function PUT(
   request: NextRequest,
@@ -11,44 +15,74 @@ export async function PUT(
     const body = await request.json()
     const { id } = await params
 
-    const { model, price, storage, color, stock, description } = body
-    const priceNumber = Number(price);
-    const stockNumber = Number(stock);
+    const { model, price, storage, color, stock, active, batteryHealth, condition, description } = body
+    const storageValue = typeof storage === 'string' && storage.trim() !== '' ? storage : undefined
+    const batteryValue = typeof batteryHealth === 'string' && batteryHealth.trim() !== '' ? batteryHealth : undefined
 
-    if (!model || priceNumber <= 0 || !storage || !color || stockNumber < 0) {
+    // Validate required fields
+    validateRequired(
+      { model, price, color, stock, condition },
+      ['model', 'price', 'color', 'stock', 'condition']
+    )
+
+    // Validate numeric fields
+    validatePositiveNumber(price, 'price')
+    validateNonNegativeNumber(stock, 'stock')
+
+    // Validate enums
+    if (storageValue) {
+      validateEnum(storageValue, STORAGE_OPTIONS as unknown as readonly string[], 'storage')
+    }
+    validateEnum(color, COLOR_OPTIONS as unknown as readonly string[], 'color')
+    if (batteryValue) {
+      validateEnum(batteryValue, BATTERY_OPTIONS as unknown as readonly string[], 'batteryHealth')
+    }
+    validateEnum(condition, CONDITION_OPTIONS as unknown as readonly string[], 'condition')
+
+    const updateDoc: Record<string, any> = {
+      $set: {
+        model,
+        price: Number(price),
+        color,
+        stock: Number(stock),
+        active: active ?? true,
+        condition,
+        description,
+      },
+    }
+
+    if (storageValue) {
+      updateDoc.$set.storage = storageValue
+    } else {
+      updateDoc.$unset = { ...(updateDoc.$unset || {}), storage: '' }
+    }
+
+    if (batteryValue) {
+      updateDoc.$set.batteryHealth = batteryValue
+    } else {
+      updateDoc.$unset = { ...(updateDoc.$unset || {}), batteryHealth: '' }
+    }
+
+    const updatedProduct = await Product.findByIdAndUpdate(id, updateDoc, {
+      new: true,
+    })
+
+    if (!updatedProduct) {
+      return sendError('Product not found', 404)
+    }
+
+    return sendSuccess(updatedProduct)
+  } catch (error) {
+    console.error('Error updating product:', error)
+
+    if (error instanceof ValidationException) {
       return NextResponse.json(
-        { error: 'Faltan campos obligatorios' },
+        { success: false, errors: error.errors },
         { status: 400 }
       )
     }
 
-    const updatedProduct = await Products.findByIdAndUpdate(
-      id,
-      {
-        model,
-        priceNumber,
-        storage,
-        color,
-        stockNumber,
-        description,
-      },
-      { new: true }
-    )
-
-    if (!updatedProduct) {
-      return NextResponse.json(
-        { error: 'Producto no encontrado' },
-        { status: 404 }
-      )
-    }
-
-    return NextResponse.json(updatedProduct)
-  } catch (error) {
-    console.error('Error al actualizar producto:', error)
-    return NextResponse.json(
-      { error: 'Error al actualizar producto' },
-      { status: 500 }
-    )
+    return sendError('Failed to update product', 500)
   }
 }
 
@@ -60,21 +94,15 @@ export async function DELETE(
     await connectToDatabase()
     const { id } = await params
 
-    const deletedProduct = await Products.findByIdAndDelete(id)
+    const deletedProduct = await Product.findByIdAndDelete(id)
 
     if (!deletedProduct) {
-      return NextResponse.json(
-        { error: 'Producto no encontrado' },
-        { status: 404 }
-      )
+      return sendError('Product not found', 404)
     }
 
-    return NextResponse.json({ message: 'Producto eliminado' })
+    return sendMessage('Product deleted successfully')
   } catch (error) {
-    console.error('Error al eliminar producto:', error)
-    return NextResponse.json(
-      { error: 'Error al eliminar producto' },
-      { status: 500 }
-    )
+    console.error('Error deleting product:', error)
+    return sendError('Failed to delete product', 500)
   }
 }

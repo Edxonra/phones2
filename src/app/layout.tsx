@@ -1,5 +1,6 @@
 import Footer from '../components/Footer'
 import Navbar from '../components/Navbar'
+import { CartProvider } from '../contexts/CartContext'
 import './globals.css'
 
 export default function RootLayout({
@@ -10,9 +11,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Navbar></Navbar>
-        <main>{children}</main>
-        <Footer></Footer>
+        <CartProvider>
+          <Navbar></Navbar>
+          <main>{children}</main>
+          <Footer></Footer>
+        </CartProvider>
       </body>
     </html>
   )
