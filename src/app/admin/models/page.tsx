@@ -18,6 +18,34 @@ interface IModel {
   image: string
 }
 
+const FALLBACK_MODEL_IMAGE = '/uploads/models/sample.jpg'
+
+function ModelThumbnail({ src, alt }: { src?: string; alt: string }) {
+  const [imageSrc, setImageSrc] = useState(src || FALLBACK_MODEL_IMAGE)
+
+  if (!imageSrc) {
+    return <div style={{ width: '60px', height: '60px' }}>-</div>
+  }
+
+  return (
+    <Image
+      src={imageSrc}
+      alt={alt}
+      width={60}
+      height={60}
+      style={{ maxWidth: '60px', maxHeight: '60px' }}
+      onError={() => {
+        if (imageSrc !== FALLBACK_MODEL_IMAGE) {
+          setImageSrc(FALLBACK_MODEL_IMAGE)
+          return
+        }
+
+        setImageSrc('')
+      }}
+    />
+  )
+}
+
 export default function ModelsAdminPage() {
   const router = useRouter()
   const { isAdmin, isLoading } = useIsAdmin()
@@ -51,14 +79,14 @@ export default function ModelsAdminPage() {
       formData.append('image', data.image)
     }
 
-    if (editingId) {
-      await update(editingId, formData)
-    } else {
-      await create(formData)
-    }
+    const success = editingId
+      ? await update(editingId, formData)
+      : await create(formData)
 
-    resetForm()
-    fetch()
+    if (success) {
+      resetForm()
+      fetch()
+    }
   }
 
   const handleEdit = (model: IModel) => {
@@ -128,13 +156,7 @@ export default function ModelsAdminPage() {
       width: '80px',
       render: (value) => (
         typeof value === 'string' && value ? (
-          <Image
-            src={value}
-            alt="model"
-            width={60}
-            height={60}
-            style={{ maxWidth: '60px', maxHeight: '60px' }}
-          />
+          <ModelThumbnail key={value} src={value} alt="model" />
         ) : (
           <div style={{ width: '60px', height: '60px' }}>-</div>
         )

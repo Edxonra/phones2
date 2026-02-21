@@ -1,11 +1,10 @@
 import { NextResponse, NextRequest } from 'next/server'
 import connectToDatabase from '@/src/lib/mongodb'
 import Model from '@/src/lib/models/Model'
-import path from 'path'
-import { writeFile } from 'fs/promises'
 import { sendSuccess, sendError } from '@/src/lib/api/response'
 import { validateString, validateEnum, ValidationException } from '@/src/lib/api/validation'
 import { BRAND_OPTIONS, CATEGORY_OPTIONS } from '@/src/shared/model.enum'
+import { uploadImageToCloudinary } from '@/src/lib/cloudinary'
 
 export async function GET() {
   try {
@@ -43,19 +42,13 @@ export async function POST(request: NextRequest) {
     validateEnum(brand, BRAND_OPTIONS as unknown as readonly string[], 'brand')
     validateEnum(category, CATEGORY_OPTIONS as unknown as readonly string[], 'category')
 
-    // Save image file
-    const bytes = await image.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    const fileName = `${Date.now()}-${image.name}`
-    const uploadDir = path.join(process.cwd(), 'public/uploads/models')
-    const filePath = `${uploadDir}/${fileName}`
-    await writeFile(filePath, buffer)
+    const imageUrl = await uploadImageToCloudinary(image, 'phones/models')
 
     const newModel = new Model({
       name,
       brand,
       category,
-      image: `/uploads/models/${fileName}`,
+      image: imageUrl,
     })
 
     await newModel.save()
@@ -66,6 +59,25 @@ export async function POST(request: NextRequest) {
     if (error instanceof ValidationException) {
       return NextResponse.json(
         { success: false, errors: error.errors },
+        { status: 400 }
+      )
+    }
+
+    if (
+      error &&
+      typeof error === 'object' &&
+      'name' in error &&
+      (error as { name?: string }).name === 'ValidationError' &&
+      'errors' in error
+    ) {
+      const validationErrors = Object.values((error as { errors: Record<string, { path?: string; message?: string }> }).errors)
+        .map((err) => ({
+          field: err.path || 'field',
+          message: err.message || 'Validation error',
+        }))
+
+      return NextResponse.json(
+        { success: false, errors: validationErrors },
         { status: 400 }
       )
     }

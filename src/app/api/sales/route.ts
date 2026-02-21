@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import Sale from '@/src/lib/models/Sale'
 import '@/src/lib/models/Purchase'
 import connectToDatabase from '@/src/lib/mongodb'
-import { sendSuccess, sendError, sendMessage } from '@/src/lib/api/response'
+import { sendSuccess, sendError } from '@/src/lib/api/response'
 import { validatePositiveNumber, validateEnum, validateRequired, validateString, ValidationException } from '@/src/lib/api/validation'
 import { STATUS_OPTIONS } from '@/src/shared/sale.enum'
 

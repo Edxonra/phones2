@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Model from '@/src/lib/models/Model'
 import connectToDatabase from '@/src/lib/mongodb'
-import { writeFile, unlink } from 'fs/promises'
-import path from 'path'
 import { sendSuccess, sendError, sendMessage } from '@/src/lib/api/response'
 import { validateString, validateEnum, ValidationException } from '@/src/lib/api/validation'
 import { BRAND_OPTIONS, CATEGORY_OPTIONS } from '@/src/shared/model.enum'
+import { uploadImageToCloudinary, deleteImageFromCloudinary } from '@/src/lib/cloudinary'
 
 export async function PUT(
   request: NextRequest,
@@ -32,23 +31,15 @@ export async function PUT(
 
     const updateData: Record<string, unknown> = { name, brand, category }
 
-    // If new image is provided, save it and delete the old one
+    // If new image is provided, upload it and delete the old one
     if (image && image.size > 0) {
       const oldModel = await Model.findById(id)
-      
-      const bytes = await image.arrayBuffer()
-      const buffer = Buffer.from(bytes)
-      const fileName = `${Date.now()}-${image.name}`
-      const uploadDir = path.join(process.cwd(), 'public/uploads/models')
-      const filePath = path.join(uploadDir, fileName)
-      await writeFile(filePath, buffer)
-      updateData.image = `/uploads/models/${fileName}`
+      const imageUrl = await uploadImageToCloudinary(image, 'phones/models')
+      updateData.image = imageUrl
 
-      // Delete old image file if it exists and is not the default
-      if (oldModel?.image && !oldModel.image.includes('sample.jpg')) {
+      if (oldModel?.image) {
         try {
-          const oldImagePath = path.join(process.cwd(), 'public', oldModel.image)
-          await unlink(oldImagePath)
+          await deleteImageFromCloudinary(oldModel.image)
         } catch (err) {
           console.error('Error deleting old image:', err)
         }

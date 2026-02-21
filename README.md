@@ -34,3 +34,31 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Production setup (Vercel)
+
+This project needs MongoDB Atlas + Cloudinary env vars in Vercel.
+
+### Environment variables
+
+Add these variables in **Vercel → Project Settings → Environment Variables**:
+
+```bash
+MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>/<db>?retryWrites=true&w=majority
+
+CLOUDINARY_CLOUD_NAME=<your-cloud-name>
+CLOUDINARY_API_KEY=<your-api-key>
+CLOUDINARY_API_SECRET=<your-api-secret>
+```
+
+### Atlas network access
+
+If you get `MongooseServerSelectionError`, allow Vercel access in Atlas:
+
+1. Go to Atlas **Security → Network Access** (or **IP Access List**).
+2. Add `0.0.0.0/0` (temporary/simple option) or a stricter range.
+3. Confirm your Atlas DB user has access to your database.
+
+### Why Cloudinary
+
+Vercel server filesystem is not persistent for uploads. This app uploads model images to Cloudinary from API routes, so images remain available after deploys/restarts.

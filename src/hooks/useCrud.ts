@@ -35,6 +35,7 @@ function getApiErrorMessage(result: unknown, fallback: string) {
 
 function getFieldLabel(field?: string) {
   const labels: Record<string, string> = {
+    name: 'Nombre',
     product: 'Producto',
     purchase: 'Compra',
     client: 'Cliente',
@@ -65,6 +66,12 @@ function getFriendlyMessage(message?: string, fieldLabel?: string) {
   }
   if (message.includes('must be one of:')) {
     return `${label} debe ser un valor valido`
+  }
+  if (message.includes('must be at least')) {
+    return `${label} no cumple el minimo de caracteres`
+  }
+  if (message.includes('must not exceed')) {
+    return `${label} excede el maximo permitido`
   }
   if (message.includes('is required and must be a string')) {
     return `${label} es obligatorio`
