@@ -51,18 +51,18 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const serializedRelatedProducts = relatedProducts.map((item) => ({
     _id: item._id.toString(),
     price: item.price,
-    storage: item.storage || null,
+    storage: item.storage ?? undefined,
     color: item.color,
-    batteryHealth: item.batteryHealth || null,
+    batteryHealth: item.batteryHealth ?? undefined,
     condition: item.condition,
     stock: item.stock,
-    description: item.description || null,
+    description: item.description ?? undefined,
     model: {
-      _id: item.model?._id?.toString() || null,
-      name: item.model?.name || null,
-      brand: item.model?.brand || null,
-      category: item.model?.category || null,
-      image: item.model?.image || null,
+      _id: item.model?._id?.toString() ?? undefined,
+      name: item.model?.name ?? undefined,
+      brand: item.model?.brand ?? undefined,
+      category: item.model?.category ?? undefined,
+      image: item.model?.image ?? undefined,
     },
   }))
 

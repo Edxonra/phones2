@@ -3,8 +3,8 @@ import connectToDatabase from '@/src/lib/mongodb'
 import Model from '@/src/lib/models/Model'
 import path from 'path'
 import { writeFile } from 'fs/promises'
-import { sendSuccess, sendError, sendMessage } from '@/src/lib/api/response'
-import { validateString, validateEnum, validateRequired, ValidationException } from '@/src/lib/api/validation'
+import { sendSuccess, sendError } from '@/src/lib/api/response'
+import { validateString, validateEnum, ValidationException } from '@/src/lib/api/validation'
 import { BRAND_OPTIONS, CATEGORY_OPTIONS } from '@/src/shared/model.enum'
 
 export async function GET() {

@@ -1,9 +1,9 @@
 'use client'
 
-import { useMemo, useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useIsAdmin } from '@/src/hooks/useIsAdmin'
-import { Status, STATUS_OPTIONS } from '@/src/shared/sale.enum'
+import { Status } from '@/src/shared/sale.enum'
 import { Battery, Color, Storage } from '@/src/shared/product.enum'
 
 interface IPayment {
@@ -48,29 +48,6 @@ interface ISale {
   notes?: string
 }
 
-interface ISaleForm {
-  _id?: string
-  product: string
-  client: string
-  salePrice: number
-  saleDate: string
-  status: string
-  notes?: string
-}
-
-interface IProduct {
-  _id?: string;
-  model: string;
-  price: number;
-  storage?: Storage;
-  color: Color
-  stock: number;
-  active: boolean;
-  description?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
 interface IModel {
   _id: string
   name: string
@@ -88,14 +65,6 @@ interface IProductPopulated {
   batteryHealth?: Battery
 }
 
-interface ISaleForm {
-  product: string
-  client: string
-  salePrice: number
-  saleDate: string
-  status: string
-  notes?: string
-}
 
 export default function PaymentsAdminPage() {
   const router = useRouter()
@@ -117,15 +86,6 @@ export default function PaymentsAdminPage() {
     if (typeof window === 'undefined') return
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
-
-  const paymentsBySale = useMemo(() => {
-    return payments.reduce((acc: Record<string, number>, payment) => {
-      const saleId = payment.sale?._id
-      if (!saleId) return acc
-      acc[saleId] = (acc[saleId] || 0) + (payment.amount || 0)
-      return acc
-    }, {})
-  }, [payments])
 
   const [formData, setFormData] = useState<IPaymentForm>({
     sale: '',
@@ -158,7 +118,7 @@ export default function PaymentsAdminPage() {
       const response = await fetch('/api/sales')
       const data = await response.json()
       setSales(data?.data ?? data ?? [])
-    } catch (err) {
+    } catch {
       setError('Error al cargar ventas')
     } finally {
       setLoading(false)
@@ -170,7 +130,7 @@ export default function PaymentsAdminPage() {
       const response = await fetch("/api/payments");
       const data = await response.json();
       setPayments(data?.data ?? data ?? []);
-    } catch (err) {
+    } catch {
       setError("Error al cargar pagos");
     } finally {
       setLoading(false);
@@ -182,7 +142,7 @@ export default function PaymentsAdminPage() {
       const response = await fetch('/api/expenses')
       const data = await response.json()
       setExpenses(data?.data ?? data ?? [])
-    } catch (err) {
+    } catch {
       setError('Error al cargar gastos extra')
     } finally {
       setLoading(false)
@@ -221,7 +181,7 @@ export default function PaymentsAdminPage() {
       setSuccess(editingId ? 'Pago actualizado' : 'Pago creado')
       resetForm()
       loadPayments()
-    } catch (err) {
+    } catch {
       setError('Error al guardar el pago')
     }
   }
@@ -259,7 +219,7 @@ export default function PaymentsAdminPage() {
       setSuccess(editingExpenseId ? 'Gasto actualizado' : 'Gasto creado')
       resetExpenseForm()
       loadExpenses()
-    } catch (err) {
+    } catch {
       setError('Error al guardar el gasto')
     }
   }
@@ -278,7 +238,7 @@ export default function PaymentsAdminPage() {
 
       setSuccess('Pago eliminado')
       loadPayments()
-    } catch (err) {
+    } catch {
       setError('Error al eliminar el pago')
     }
   }
@@ -297,7 +257,7 @@ export default function PaymentsAdminPage() {
 
       setSuccess('Gasto eliminado')
       loadExpenses()
-    } catch (err) {
+    } catch {
       setError('Error al eliminar el gasto')
     }
   }
@@ -457,7 +417,7 @@ export default function PaymentsAdminPage() {
 
       const fileId = payment._id || sale._id
       doc.save(`factura-pago-${fileId}.pdf`)
-    } catch (err) {
+    } catch {
       setError('No se pudo generar la factura')
     }
   }

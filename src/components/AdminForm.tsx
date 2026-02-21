@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Image from 'next/image'
 
 export interface FormField {
   name: string
@@ -9,8 +10,8 @@ export interface FormField {
   required?: boolean
   placeholder?: string
   options?: Array<{ value: string; label: string }>
-  value?: any
-  onChange?: (value: any) => void
+  value?: unknown
+  onChange?: (value: unknown) => void
   error?: string
   min?: number
   max?: number
@@ -21,8 +22,8 @@ export interface FormField {
 
 interface AdminFormProps {
   fields: FormField[]
-  initialValues?: Record<string, any>
-  onSubmit: (data: Record<string, any>) => void | Promise<void>
+  initialValues?: Record<string, unknown>
+  onSubmit: (data: Record<string, unknown>) => void | Promise<void>
   onCancel?: () => void
   submitLabel?: string
   cancelLabel?: string
@@ -34,13 +35,13 @@ export default function AdminForm({
   fields,
   initialValues = {},
   onSubmit,
-  onCancel,
+  onCancel: _onCancel, // eslint-disable-line @typescript-eslint/no-unused-vars
   submitLabel = 'Guardar',
-  cancelLabel = 'Cancelar',
+  cancelLabel: _cancelLabel = 'Cancelar', // eslint-disable-line @typescript-eslint/no-unused-vars
   loading = false,
-  isEditing = false,
+  isEditing: _isEditing = false, // eslint-disable-line @typescript-eslint/no-unused-vars
 }: AdminFormProps) {
-  const [formData, setFormData] = React.useState<Record<string, any>>({})
+  const [formData, setFormData] = React.useState<Record<string, unknown>>({})
   const [errors, setErrors] = React.useState<Record<string, string>>({})
   const lastInitialRef = React.useRef<string>('')
 
@@ -48,18 +49,18 @@ export default function AdminForm({
     const currentKey = JSON.stringify(initialValues || {})
     if (currentKey === lastInitialRef.current) return
     lastInitialRef.current = currentKey
-    const initialData: Record<string, any> = {}
+    const initialData: Record<string, unknown> = {}
     fields.forEach((field) => {
       const valueFromInitials = initialValues[field.name]
       initialData[field.name] = valueFromInitials ?? field.value ?? ''
     })
     setFormData(initialData)
-  }, [initialValues])
+  }, [initialValues, fields])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target as HTMLInputElement
 
-    let newValue: any = value
+    let newValue: unknown = value
     if (type === 'number') {
       newValue = value === '' ? '' : Number(value)
     } else if (type === 'file') {
@@ -125,7 +126,7 @@ export default function AdminForm({
                 <label>{field.label} {field.required && '*'}</label>
                 <textarea
                   name={key}
-                  value={formData[key]}
+                  value={String(formData[key] ?? '')}
                   onChange={handleChange}
                   placeholder={field.placeholder}
                   rows={field.rows || 4}
@@ -142,7 +143,7 @@ export default function AdminForm({
                 <label>{field.label} {field.required && '*'}</label>
                 <select
                   name={key}
-                  value={formData[key] ?? ''}
+                  value={String(formData[key] ?? '')}
                   onChange={handleChange}
                   className={error ? 'error' : ''}
                 >
@@ -164,7 +165,13 @@ export default function AdminForm({
                 <label>{field.label} {field.required && '*'}</label>
                 {typeof formData[key] === 'string' && formData[key] && (
                   <div className="file-preview">
-                    <img src={formData[key]} alt="preview" />
+                    <Image
+                      src={formData[key]}
+                      alt="preview"
+                      width={120}
+                      height={120}
+                      style={{ objectFit: 'cover' }}
+                    />
                     <small>Imagen actual</small>
                   </div>
                 )}
@@ -204,7 +211,7 @@ export default function AdminForm({
               <input
                 type={field.type}
                 name={key}
-                value={formData[key] ?? ''}
+                value={typeof formData[key] === 'number' ? formData[key] : String(formData[key] ?? '')}
                 onChange={handleChange}
                 placeholder={field.placeholder}
                 min={field.min}

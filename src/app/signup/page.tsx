@@ -62,7 +62,7 @@ export default function SignupPage() {
       setTimeout(() => {
         router.push('/login')
       }, 2000)
-    } catch (err) {
+    } catch {
       setError('Error al registrarse. Por favor intenta de nuevo.')
     }
   }

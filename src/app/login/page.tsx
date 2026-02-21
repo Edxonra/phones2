@@ -10,7 +10,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
-  const [rememberPassword, setRememberPassword] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -27,10 +26,9 @@ export default function LoginPage() {
 
         if (data.password) {
           setPassword(data.password)
-          setRememberPassword(true)
         }
-      } catch (err) {
-        console.error('Error al cargar preferencias:', err)
+      } catch (error) {
+        console.error('Error al cargar preferencias:', error)
       }
     }
 
@@ -85,7 +83,7 @@ export default function LoginPage() {
         router.refresh()
         router.push('/')
       }, 100)
-    } catch (err) {
+    } catch {
       setError('Error al iniciar sesión. Por favor intenta de nuevo.')
     }
   }

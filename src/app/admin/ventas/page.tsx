@@ -105,7 +105,7 @@ export default function SalesAdminPage() {
     return new Date(year, month - 1, day).toLocaleDateString('es-CR')
   }
 
-  const handleSubmit = async (data: Record<string, any>) => {
+  const handleSubmit = async (data: Record<string, unknown>) => {
     const payload = {
       ...data,
       status: data.status ?? selectedSale?.status ?? 'Pendiente',
@@ -163,7 +163,7 @@ export default function SalesAdminPage() {
       type: 'select',
       required: true,
       options: productOptions,
-      onChange: (value) => setSelectedProductId(value),
+      onChange: (value) => setSelectedProductId(String(value ?? '')),
     },
     {
       name: 'purchase',
@@ -234,7 +234,7 @@ export default function SalesAdminPage() {
     {
       key: 'salePrice',
       label: 'Precio',
-      render: (value) => formatPrice(value),
+      render: (value) => formatPrice(Number(value)),
     },
     {
       key: 'pending',
@@ -244,7 +244,7 @@ export default function SalesAdminPage() {
     {
       key: 'saleDate',
       label: 'Fecha',
-      render: (value) => formatSaleDate(value),
+      render: (value) => formatSaleDate(String(value ?? '')),
     },
     {
       key: 'status',

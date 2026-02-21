@@ -144,32 +144,6 @@ export default function ProfitRegisterPage() {
     }, {});
   }, [expenses]);
 
-  const purchasesById = useMemo(() => {
-    return purchases.reduce((acc: Record<string, number>, purchase) => {
-      if (!purchase._id) return acc;
-      acc[purchase._id] = purchase.cost || 0;
-      return acc;
-    }, {});
-  }, [purchases]);
-
-  const purchasesByProduct = useMemo(() => {
-    const map: Record<string, IPurchase[]> = {};
-    purchases.forEach((purchase) => {
-      const productId = purchase.product?._id;
-      if (!productId) return;
-      if (!map[productId]) map[productId] = [];
-      map[productId].push(purchase);
-    });
-
-    Object.values(map).forEach((items) => {
-      items.sort(
-        (a, b) => (parseLocalDate(a.purchaseDate)?.getTime() ?? 0) - (parseLocalDate(b.purchaseDate)?.getTime() ?? 0)
-      );
-    });
-
-    return map;
-  }, [purchases]);
-
   const saleByPurchaseId = useMemo(() => {
     const map: Record<string, ISale> = {}
     sales.forEach((sale) => {
@@ -261,12 +235,11 @@ export default function ProfitRegisterPage() {
     return rowsFromPurchases.sort(
       (a, b) => (parseLocalDate(b.date)?.getTime() ?? 0) - (parseLocalDate(a.date)?.getTime() ?? 0)
     )
-  }, [sales, purchases, paymentsBySale, expensesBySale, purchasesById, purchasesByProduct, saleByPurchaseId]);
+  }, [purchases, paymentsBySale, expensesBySale, saleByPurchaseId, salesByProduct]);
 
   const filteredRows = useMemo(() => {
     if (filterMode === "all") return rows;
 
-    const now = new Date();
     let from: Date | null = null;
     let to: Date | null = null;
 
@@ -345,7 +318,7 @@ export default function ProfitRegisterPage() {
     {
       key: "date",
       label: "Fecha",
-      render: (value) => formatLocalDate(value),
+      render: (value) => formatLocalDate(String(value ?? '')),
     },
     {
       key: "client",
@@ -406,7 +379,7 @@ export default function ProfitRegisterPage() {
         <div className="form-row">
           <div className="form-group">
             <label>Filtro de fechas</label>
-            <select value={filterMode} onChange={(e) => setFilterMode(e.target.value as any)}>
+            <select value={filterMode} onChange={(e) => setFilterMode(e.target.value as "all" | "range")}>
               <option value="all">Toda la historia</option>
               <option value="range">Rango personalizado</option>
             </select>

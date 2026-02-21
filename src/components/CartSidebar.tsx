@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useCart } from '@/src/contexts/CartContext'
 
 interface CartSidebarProps {
@@ -131,12 +132,12 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                 >
                   <div style={{ display: 'flex', gap: '12px' }}>
                     {item.modelImage && (
-                      <img
+                      <Image
                         src={item.modelImage}
                         alt={item.modelName}
+                        width={60}
+                        height={60}
                         style={{
-                          width: '60px',
-                          height: '60px',
                           objectFit: 'cover',
                           borderRadius: '4px',
                         }}

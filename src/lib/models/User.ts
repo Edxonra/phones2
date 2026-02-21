@@ -43,9 +43,6 @@ const UserSchema: Schema = new Schema({
   timestamps: true,
 })
 
-// Add index for email lookups
-UserSchema.index({ email: 1 })
-
 // Prevent re-compilation of model in development
 const User = mongoose.models.User || mongoose.model<IUser>('User', UserSchema)
 

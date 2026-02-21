@@ -39,28 +39,46 @@ export async function PUT(
     }
     validateEnum(condition, CONDITION_OPTIONS as unknown as readonly string[], 'condition')
 
-    const updateDoc: Record<string, any> = {
-      $set: {
-        model,
-        price: Number(price),
-        color,
-        stock: Number(stock),
-        active: active ?? true,
-        condition,
-        description,
-      },
+    const setDoc: {
+      model: unknown
+      price: number
+      color: unknown
+      stock: number
+      active: boolean
+      condition: unknown
+      description: unknown
+      storage?: string
+      batteryHealth?: string
+    } = {
+      model,
+      price: Number(price),
+      color,
+      stock: Number(stock),
+      active: active ?? true,
+      condition,
+      description,
     }
 
+    const unsetDoc: Record<string, ''> = {}
+
     if (storageValue) {
-      updateDoc.$set.storage = storageValue
+      setDoc.storage = storageValue
     } else {
-      updateDoc.$unset = { ...(updateDoc.$unset || {}), storage: '' }
+      unsetDoc.storage = ''
     }
 
     if (batteryValue) {
-      updateDoc.$set.batteryHealth = batteryValue
+      setDoc.batteryHealth = batteryValue
     } else {
-      updateDoc.$unset = { ...(updateDoc.$unset || {}), batteryHealth: '' }
+      unsetDoc.batteryHealth = ''
+    }
+
+    const updateDoc: { $set: typeof setDoc; $unset?: Record<string, ''> } = {
+      $set: setDoc,
+    }
+
+    if (Object.keys(unsetDoc).length > 0) {
+      updateDoc.$unset = unsetDoc
     }
 
     const updatedProduct = await Product.findByIdAndUpdate(id, updateDoc, {

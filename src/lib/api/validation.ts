@@ -17,7 +17,7 @@ export class ValidationException extends Error {
  * Validate if a value is a positive number
  */
 export function validatePositiveNumber(
-  value: any,
+  value: unknown,
   fieldName: string = 'value'
 ): value is number {
   const num = Number(value)
@@ -33,7 +33,7 @@ export function validatePositiveNumber(
  * Validate if a value is a non-negative number
  */
 export function validateNonNegativeNumber(
-  value: any,
+  value: unknown,
   fieldName: string = 'value'
 ): value is number {
   const num = Number(value)
@@ -49,7 +49,7 @@ export function validateNonNegativeNumber(
  * Validate if a value is a non-empty string
  */
 export function validateString(
-  value: any,
+  value: unknown,
   fieldName: string = 'value'
 ): value is string {
   if (typeof value !== 'string' || value.trim() === '') {
@@ -64,11 +64,11 @@ export function validateString(
  * Validate if a value exists in enum options
  */
 export function validateEnum(
-  value: any,
+  value: unknown,
   options: readonly string[],
   fieldName: string = 'value'
 ): boolean {
-  if (!options.includes(value)) {
+  if (typeof value !== 'string' || !options.includes(value)) {
     throw new ValidationException([
       {
         field: fieldName,
@@ -83,7 +83,7 @@ export function validateEnum(
  * Validate required fields in an object
  */
 export function validateRequired(
-  obj: Record<string, any>,
+  obj: Record<string, unknown>,
   requiredFields: string[]
 ): boolean {
   const missing = requiredFields.filter((field) => {

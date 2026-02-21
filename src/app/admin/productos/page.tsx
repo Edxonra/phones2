@@ -661,7 +661,7 @@ export default function ProductsAdminPage() {
     generateSamsungNuevosJpg();
   };
 
-  const handleSubmit = async (data: Record<string, any>) => {
+  const handleSubmit = async (data: Record<string, unknown>) => {
     if (editingId) {
       await update(editingId, data);
     } else {
@@ -774,18 +774,18 @@ export default function ProductsAdminPage() {
       label: "Modelo",
       render: (value) => {
         const model = value as IModel;
-        return typeof model === "object" ? `${model.brand} ${model.name}` : value;
+        return typeof model === "object" ? `${model.brand} ${model.name}` : String(value ?? "");
       },
     },
     {
       key: "price",
       label: "Precio",
-      render: (value) => formatPrice(value),
+      render: (value) => formatPrice(Number(value)),
     },
     {
       key: "storage",
       label: "Almacenamiento",
-      render: (value) => value || '',
+      render: (value) => String(value ?? ''),
     },
     {
       key: "color",

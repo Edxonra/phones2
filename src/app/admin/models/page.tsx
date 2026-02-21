@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { useIsAdmin } from '@/src/hooks/useIsAdmin'
 import { useCrud } from '@/src/hooks/useCrud'
 import AdminTable, { TableColumn } from '@/src/components/AdminTable'
@@ -41,11 +42,11 @@ export default function ModelsAdminPage() {
     fetch()
   }, [isAdmin, isLoading, router, fetch])
 
-  const handleSubmit = async (data: Record<string, any>) => {
+  const handleSubmit = async (data: Record<string, unknown>) => {
     const formData = new FormData()
-    formData.append('name', data.name)
-    formData.append('brand', data.brand)
-    formData.append('category', data.category)
+    formData.append('name', String(data.name ?? ''))
+    formData.append('brand', String(data.brand ?? ''))
+    formData.append('category', String(data.category ?? ''))
     if (data.image instanceof File) {
       formData.append('image', data.image)
     }
@@ -126,7 +127,17 @@ export default function ModelsAdminPage() {
       label: 'Imagen',
       width: '80px',
       render: (value) => (
-        <img src={value} alt="model" style={{ maxWidth: '60px', maxHeight: '60px' }} />
+        typeof value === 'string' && value ? (
+          <Image
+            src={value}
+            alt="model"
+            width={60}
+            height={60}
+            style={{ maxWidth: '60px', maxHeight: '60px' }}
+          />
+        ) : (
+          <div style={{ width: '60px', height: '60px' }}>-</div>
+        )
       ),
     },
     {

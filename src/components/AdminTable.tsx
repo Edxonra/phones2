@@ -5,7 +5,7 @@ import React from 'react'
 export interface TableColumn<T> {
   key: keyof T | string
   label: string
-  render?: (value: any, row: T) => React.ReactNode
+  render?: (value: unknown, row: T) => React.ReactNode
   width?: string
 }
 
@@ -21,7 +21,7 @@ interface AdminTableProps<T> {
   emptyMessage?: string
 }
 
-export default function AdminTable<T extends Record<string, any>>({
+export default function AdminTable<T extends object>({
   columns,
   data,
   loading = false,
@@ -55,14 +55,15 @@ export default function AdminTable<T extends Record<string, any>>({
         </thead>
         <tbody>
           {data.map((row) => {
-            const rowId = String(row[primaryKey as keyof T] || row._id)
+            const recordRow = row as Record<string, unknown>
+            const rowId = String(recordRow[String(primaryKey)] || recordRow._id)
             return (
               <tr key={rowId}>
                 {columns.map((col) => (
                   <td key={`${rowId}-${String(col.key)}`}>
                     {col.render
-                      ? col.render(row[col.key as keyof T], row)
-                      : String(row[col.key as keyof T] ?? '')}
+                      ? col.render(recordRow[String(col.key)], row)
+                      : String(recordRow[String(col.key)] ?? '')}
                   </td>
                 ))}
                 {actions && (onEdit || onDelete || onView) && (

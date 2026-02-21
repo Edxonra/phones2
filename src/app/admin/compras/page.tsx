@@ -89,7 +89,7 @@ export default function PurchasesAdminPage() {
     return value.split('T')[0]
   }
 
-  const handleSubmit = async (data: Record<string, any>) => {
+  const handleSubmit = async (data: Record<string, unknown>) => {
     if (editingId) {
       await update(editingId, data)
     } else {
@@ -102,6 +102,9 @@ export default function PurchasesAdminPage() {
   const handleEdit = (purchase: IPurchase) => {
     setEditingId(purchase._id || null)
     setSelectedPurchase(purchase)
+    if (purchase.provider) {
+      setSelectedProvider(purchase.provider)
+    }
     setIsFormVisible(true)
     scrollToForm()
   }
@@ -118,12 +121,6 @@ export default function PurchasesAdminPage() {
     setSelectedProvider('')
     setIsFormVisible(false)
   }
-
-  useEffect(() => {
-    if (selectedPurchase?.provider) {
-      setSelectedProvider(selectedPurchase.provider)
-    }
-  }, [selectedPurchase])
 
   const providerBrandsMap: Record<string, string[] | null> = {
     Apple: ['Apple'],
@@ -150,7 +147,7 @@ export default function PurchasesAdminPage() {
       type: 'select',
       required: true,
       options: PROVIDER_OPTIONS.map((p) => ({ value: p, label: p })),
-      onChange: (value) => setSelectedProvider(value),
+      onChange: (value) => setSelectedProvider(String(value ?? '')),
     },
     {
       name: 'product',
@@ -199,12 +196,12 @@ export default function PurchasesAdminPage() {
     {
       key: 'cost',
       label: 'Costo',
-      render: (value) => formatPrice(value),
+      render: (value) => formatPrice(Number(value)),
     },
     {
       key: 'purchaseDate',
       label: 'Fecha',
-      render: (value) => formatLocalDate(value),
+      render: (value) => formatLocalDate(String(value ?? '')),
     },
   ]
 

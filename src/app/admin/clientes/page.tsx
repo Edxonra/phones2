@@ -47,7 +47,7 @@ export default function CustomersAdminPage() {
     fetchCustomers();
   }, [isAdmin, isLoading, router, fetchCustomers]);
 
-  const handleSubmit = async (data: Record<string, any>) => {
+  const handleSubmit = async (data: Record<string, unknown>) => {
     if (editingId) {
       await update(editingId, data);
     } else {

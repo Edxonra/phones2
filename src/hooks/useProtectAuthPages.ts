@@ -12,7 +12,8 @@ export function useProtectAuthPages() {
       // Si está logeado, redirigir a home
       router.push('/')
     } else {
-      // Si no está logeado, permitir ver la página
+      // Marcar como cargado solo si NO se redirige
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false)
     }
   }, [router])

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface SemiNewProduct {
   _id: string
@@ -95,7 +96,12 @@ export default function SemiNewSection() {
                 >
                   <div className="top-seller-image">
                     {product.model?.image ? (
-                      <img src={product.model.image} alt={product.model?.name || 'Producto'} />
+                      <Image
+                        src={product.model.image}
+                        alt={product.model?.name || 'Producto'}
+                        width={300}
+                        height={300}
+                      />
                     ) : (
                       <div className="carousel-placeholder">Sin imagen</div>
                     )}

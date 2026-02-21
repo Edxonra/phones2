@@ -188,6 +188,7 @@ export default function Navbar() {
 
   useEffect(() => {
     fetchModels()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   if (!mounted) {

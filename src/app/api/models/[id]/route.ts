@@ -30,7 +30,7 @@ export async function PUT(
     validateEnum(brand, BRAND_OPTIONS as unknown as readonly string[], 'brand')
     validateEnum(category, CATEGORY_OPTIONS as unknown as readonly string[], 'category')
 
-    const updateData: any = { name, brand, category }
+    const updateData: Record<string, unknown> = { name, brand, category }
 
     // If new image is provided, save it and delete the old one
     if (image && image.size > 0) {

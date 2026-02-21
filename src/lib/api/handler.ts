@@ -12,7 +12,7 @@ export async function handleApiRequest(
 ): Promise<NextResponse> {
   try {
     await connectToDatabase()
-    return await callback(null as any)
+    return await callback(null as unknown as NextRequest)
   } catch (error) {
     console.error('API Error:', error)
 

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import connectToDatabase from '@/src/lib/mongodb'
 import Product from '@/src/lib/models/Product'
 import '@/src/lib/models/Model'
@@ -51,7 +52,12 @@ const renderProductCards = (products: SearchProduct[]) => (
       >
         <div className="top-seller-image">
           {product.model?.image ? (
-            <img src={product.model.image} alt={product.model?.name || 'Producto'} />
+            <Image
+              src={product.model.image}
+              alt={product.model?.name || 'Producto'}
+              width={300}
+              height={300}
+            />
           ) : (
             <div className="carousel-placeholder">Sin imagen</div>
           )}
@@ -149,7 +155,7 @@ export default async function Page({ searchParams }: PageProps) {
         <section className="section">
           <div className="top-sellers">
             <div className="top-sellers-header">
-              <h2>Resultados para "{query}"</h2>
+              <h2>Resultados para &quot;{query}&quot;</h2>
               <div className="top-sellers-actions">
                 <span className="badge">{groupedResults.length}</span>
                 <SearchSort query={query} sort={sort} />

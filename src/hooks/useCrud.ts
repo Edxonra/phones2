@@ -9,16 +9,19 @@ export interface CrudState<T> {
 
 export interface UseCrudReturn<T> extends CrudState<T> {
   fetch: () => Promise<void>
-  create: (data: any) => Promise<boolean>
-  update: (id: string, data: any) => Promise<boolean>
+  create: (data: Record<string, unknown> | FormData) => Promise<boolean>
+  update: (id: string, data: Record<string, unknown> | FormData) => Promise<boolean>
   delete: (id: string) => Promise<boolean>
   clearMessages: () => void
 }
 
-function getApiErrorMessage(result: any, fallback: string) {
-  if (result?.error) return result.error
-  if (Array.isArray(result?.errors) && result.errors.length > 0) {
-    return result.errors
+function getApiErrorMessage(result: unknown, fallback: string) {
+  const parsedResult =
+    result && typeof result === 'object' ? (result as { error?: string; errors?: Array<{ field?: string; message?: string }> }) : null
+
+  if (parsedResult?.error) return parsedResult.error
+  if (Array.isArray(parsedResult?.errors) && parsedResult.errors.length > 0) {
+    return parsedResult.errors
       .map((err: { field?: string; message?: string }) => {
         const fieldLabel = getFieldLabel(err?.field)
         const message = getFriendlyMessage(err?.message, fieldLabel)
@@ -109,7 +112,7 @@ export function useCrud<T>(endpoint: string): UseCrudReturn<T> {
   }, [endpoint])
 
   const create = useCallback(
-    async (data: any) => {
+    async (data: Record<string, unknown> | FormData) => {
       setState((prev) => ({ ...prev, loading: true, error: null }))
       try {
         const response = await fetch(endpoint, {
@@ -141,7 +144,7 @@ export function useCrud<T>(endpoint: string): UseCrudReturn<T> {
   )
 
   const update = useCallback(
-    async (id: string, data: any) => {
+    async (id: string, data: Record<string, unknown> | FormData) => {
       setState((prev) => ({ ...prev, loading: true, error: null }))
       try {
         const response = await fetch(`${endpoint}/${id}`, {
@@ -155,7 +158,7 @@ export function useCrud<T>(endpoint: string): UseCrudReturn<T> {
         }
         setState((prev) => ({
           ...prev,
-          items: prev.items.map((item: any) => (item._id === id ? result.data || result : item)),
+          items: prev.items.map((item) => ((item as { _id: string })._id === id ? result.data || result : item)),
           loading: false,
           success: 'Objeto actualizado exitosamente',
         }))
@@ -185,7 +188,7 @@ export function useCrud<T>(endpoint: string): UseCrudReturn<T> {
         }
         setState((prev) => ({
           ...prev,
-          items: prev.items.filter((item: any) => item._id !== id),
+          items: prev.items.filter((item) => (item as { _id: string })._id !== id),
           loading: false,
           success: 'Objeto eliminado exitosamente',
         }))

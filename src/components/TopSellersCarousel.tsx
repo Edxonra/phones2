@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface TopProduct {
   productId: string
@@ -78,7 +79,12 @@ export default function TopSellersCarousel() {
           <Link href={`/productos/${item.productId}`} className="top-seller-card" key={item.productId}>
             <div className="top-seller-image">
               {item.model.image ? (
-                <img src={item.model.image} alt={item.model.name} />
+                <Image
+                  src={item.model.image}
+                  alt={item.model.name}
+                  width={300}
+                  height={300}
+                />
               ) : (
                 <div className="carousel-placeholder">Sin imagen</div>
               )}
