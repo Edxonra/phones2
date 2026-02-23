@@ -29,27 +29,33 @@ export async function PUT(
     validateEnum(brand, BRAND_OPTIONS as unknown as readonly string[], 'brand')
     validateEnum(category, CATEGORY_OPTIONS as unknown as readonly string[], 'category')
 
+    const existingModel = await Model.findById(id)
+
+    if (!existingModel) {
+      return sendError('Model not found', 404)
+    }
+
     const updateData: Record<string, unknown> = { name, brand, category }
+    const previousImage = existingModel.image
+    let newImage: string | null = null
 
-    // If new image is provided, upload it and delete the old one
     if (image && image.size > 0) {
-      const oldModel = await Model.findById(id)
-      const imageUrl = await uploadImageToCloudinary(image, 'phones/models')
-      updateData.image = imageUrl
-
-      if (oldModel?.image) {
-        try {
-          await deleteImageFromCloudinary(oldModel.image)
-        } catch (err) {
-          console.error('Error deleting old image:', err)
-        }
-      }
+      newImage = await uploadImageToCloudinary(image, 'phones/models')
+      updateData.image = newImage
     }
 
     const updatedModel = await Model.findByIdAndUpdate(id, updateData, { new: true })
 
     if (!updatedModel) {
       return sendError('Model not found', 404)
+    }
+
+    if (newImage && previousImage && previousImage !== newImage) {
+      try {
+        await deleteImageFromCloudinary(previousImage)
+      } catch (err) {
+        console.error('Error deleting old image:', err)
+      }
     }
 
     return sendSuccess(updatedModel)
@@ -75,11 +81,21 @@ export async function DELETE(
     await connectToDatabase()
     const { id } = await params
 
-    const model = await Model.findByIdAndDelete(id)
+    const model = await Model.findById(id)
 
     if (!model) {
       return sendError('Model not found', 404)
     }
+
+    if (model.image) {
+      try {
+        await deleteImageFromCloudinary(model.image)
+      } catch (err) {
+        console.error('Error deleting model image:', err)
+      }
+    }
+
+    await Model.findByIdAndDelete(id)
 
     return sendMessage('Model deleted successfully')
   } catch (error) {
