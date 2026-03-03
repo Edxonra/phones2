@@ -42,6 +42,8 @@ export default function ProductsAdminPage() {
   const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null);
   const [brandFilter, setBrandFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [productsBrandFilter, setProductsBrandFilter] = useState("");
+  const [productsConditionFilter, setProductsConditionFilter] = useState("");
 
   const scrollToForm = () => {
     if (typeof window === 'undefined') return;
@@ -102,7 +104,7 @@ export default function ProductsAdminPage() {
     });
 
     const rows = Array.from(grouped.values()).sort((a, b) =>
-      a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+      a.name.localeCompare(b.name, 'es', { sensitivity: 'base', numeric: true })
     );
 
     const width = 1200;
@@ -200,9 +202,17 @@ export default function ProductsAdminPage() {
       }
     });
 
-    const rows = Array.from(grouped.values()).sort((a, b) =>
-      a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
-    );
+    const getPixelNumber = (name: string) => {
+      const match = name.match(/pixel\s*(\d+)/i);
+      return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
+    };
+
+    const rows = Array.from(grouped.values()).sort((a, b) => {
+      const pixelA = getPixelNumber(a.name);
+      const pixelB = getPixelNumber(b.name);
+      if (pixelA !== pixelB) return pixelA - pixelB;
+      return a.name.localeCompare(b.name, 'es', { sensitivity: 'base', numeric: true });
+    });
 
     const width = 1200;
     const rowHeight = 54;
@@ -293,9 +303,24 @@ export default function ProductsAdminPage() {
       }
     });
 
-    const rows = Array.from(grouped.values()).sort((a, b) =>
-      a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
-    );
+    const getPixelSort = (name: string) => {
+      const lower = name.toLowerCase();
+      const match = lower.match(/pixel\s*(\d+)([a-z]*)/i);
+      if (!match) return { number: Number.POSITIVE_INFINITY, suffix: 'zz', full: lower };
+      return {
+        number: Number(match[1]),
+        suffix: match[2] || '',
+        full: lower,
+      };
+    };
+
+    const rows = Array.from(grouped.values()).sort((a, b) => {
+      const sa = getPixelSort(a.name);
+      const sb = getPixelSort(b.name);
+      if (sa.number !== sb.number) return sa.number - sb.number;
+      if (sa.suffix !== sb.suffix) return sa.suffix.localeCompare(sb.suffix, 'es', { sensitivity: 'base' });
+      return a.name.localeCompare(b.name, 'es', { sensitivity: 'base', numeric: true });
+    });
 
     const width = 1200;
     const rowHeight = 54;
@@ -389,9 +414,21 @@ export default function ProductsAdminPage() {
       }
     });
 
-    const rows = Array.from(grouped.values()).sort((a, b) =>
-      a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
-    );
+    const getPixelGeneration = (name: string) => {
+      const match = name.match(/pixel\s*(\d+)/i);
+      return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
+    };
+
+    const rows = Array.from(grouped.values()).sort((a, b) => {
+      const generationA = getPixelGeneration(a.name);
+      const generationB = getPixelGeneration(b.name);
+
+      if (generationA !== generationB) {
+        return generationA - generationB;
+      }
+
+      return a.name.localeCompare(b.name, 'es', { sensitivity: 'base', numeric: true });
+    });
 
     const width = 1200;
     const rowHeight = 54;
@@ -489,9 +526,47 @@ export default function ProductsAdminPage() {
       }
     });
 
-    const rows = Array.from(grouped.values()).sort((a, b) =>
-      a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
-    );
+    const getSamsungOrder = (name: string) => {
+      const normalized = name.toLowerCase();
+      const match = normalized.match(/s\s*(\d+)\s*(.*)$/i);
+
+      if (!match) {
+        return { generation: Number.POSITIVE_INFINITY, variantRank: 99 };
+      }
+
+      const tail = (match[2] || '').replace(/[^a-z0-9+\s]/g, ' ').replace(/\s+/g, ' ').trim();
+
+      let variantRank = 99;
+      if (tail.length === 0) {
+        variantRank = 0;
+      } else if (tail.startsWith('+')) {
+        variantRank = 1;
+      } else if (tail.includes('ultra')) {
+        variantRank = 2;
+      } else if (tail.includes('edge')) {
+        variantRank = 3;
+      }
+
+      return {
+        generation: Number(match[1]),
+        variantRank,
+      };
+    };
+
+    const rows = Array.from(grouped.values()).sort((a, b) => {
+      const orderA = getSamsungOrder(a.name);
+      const orderB = getSamsungOrder(b.name);
+
+      if (orderA.generation !== orderB.generation) {
+        return orderA.generation - orderB.generation;
+      }
+
+      if (orderA.variantRank !== orderB.variantRank) {
+        return orderA.variantRank - orderB.variantRank;
+      }
+
+      return a.name.localeCompare(b.name, 'es', { sensitivity: 'base', numeric: true });
+    });
 
     const width = 1200;
     const rowHeight = 54;
@@ -582,9 +657,47 @@ export default function ProductsAdminPage() {
       }
     });
 
-    const rows = Array.from(grouped.values()).sort((a, b) =>
-      a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
-    );
+    const getSamsungOrder = (name: string) => {
+      const normalized = name.toLowerCase();
+      const match = normalized.match(/s\s*(\d+)\s*(.*)$/i);
+
+      if (!match) {
+        return { generation: Number.POSITIVE_INFINITY, variantRank: 99 };
+      }
+
+      const tail = (match[2] || '').replace(/[^a-z0-9+\s]/g, ' ').replace(/\s+/g, ' ').trim();
+
+      let variantRank = 99;
+      if (tail.length === 0) {
+        variantRank = 0;
+      } else if (tail.startsWith('+')) {
+        variantRank = 1;
+      } else if (tail.includes('ultra')) {
+        variantRank = 2;
+      } else if (tail.includes('edge')) {
+        variantRank = 3;
+      }
+
+      return {
+        generation: Number(match[1]),
+        variantRank,
+      };
+    };
+
+    const rows = Array.from(grouped.values()).sort((a, b) => {
+      const orderA = getSamsungOrder(a.name);
+      const orderB = getSamsungOrder(b.name);
+
+      if (orderA.generation !== orderB.generation) {
+        return orderA.generation - orderB.generation;
+      }
+
+      if (orderA.variantRank !== orderB.variantRank) {
+        return orderA.variantRank - orderB.variantRank;
+      }
+
+      return a.name.localeCompare(b.name, 'es', { sensitivity: 'base', numeric: true });
+    });
 
     const width = 1200;
     const rowHeight = 54;
@@ -652,6 +765,138 @@ export default function ProductsAdminPage() {
     link.click();
   };
 
+  const generateGooglePixelsSeminuevosJpg = () => {
+    const title = 'Pixels seminuevos';
+    const subtitle = '0 detalles';
+
+    const filtered = products.filter((product) => {
+      if (!product.active) return false;
+      if (product.condition !== 'Seminuevo') return false;
+      if (!product.model || typeof product.model !== 'object') return false;
+      const model = product.model as IModel;
+      return model.brand === 'Google' && model.category === 'Smartphone';
+    });
+
+    const grouped = new Map<string, { name: string; price: number }>();
+    filtered.forEach((product) => {
+      const model = product.model as IModel;
+      const key = model._id;
+      const existing = grouped.get(key);
+      if (!existing || product.price < existing.price) {
+        grouped.set(key, {
+          name: `${model.brand} ${model.name}`,
+          price: product.price,
+        });
+      }
+    });
+
+    const getPixelOrder = (name: string) => {
+      const normalized = name.toLowerCase();
+      const match = normalized.match(/pixel\s*(\d+)\s*(.*)$/i);
+      if (!match) {
+        return { generation: Number.POSITIVE_INFINITY, variantRank: 99 };
+      }
+
+      const tail = (match[2] || '').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+
+      let variantRank = 99;
+      if (tail.length === 0) {
+        variantRank = 0;
+      } else if (/^a\b/.test(tail)) {
+        variantRank = 1;
+      } else if (tail.includes('pro xl') || tail.includes('proxl')) {
+        variantRank = 3;
+      } else if (tail.includes('pro')) {
+        variantRank = 2;
+      }
+
+      return {
+        generation: Number(match[1]),
+        variantRank,
+      };
+    };
+
+    const rows = Array.from(grouped.values()).sort((a, b) => {
+      const orderA = getPixelOrder(a.name);
+      const orderB = getPixelOrder(b.name);
+
+      if (orderA.generation !== orderB.generation) {
+        return orderA.generation - orderB.generation;
+      }
+
+      if (orderA.variantRank !== orderB.variantRank) {
+        return orderA.variantRank - orderB.variantRank;
+      }
+
+      return a.name.localeCompare(b.name, 'es', { sensitivity: 'base', numeric: true });
+    });
+
+    const width = 1200;
+    const rowHeight = 54;
+    const headerHeight = 70;
+    const padding = 60;
+    const tableTop = 210;
+    const tableHeight = headerHeight + Math.max(rows.length, 1) * rowHeight;
+    const height = tableTop + tableHeight + padding;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#f6f6f2';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '700 46px "Segoe UI", Arial, sans-serif';
+    ctx.fillText(title, padding, 90);
+
+    if (subtitle) {
+      ctx.fillStyle = '#334155';
+      ctx.font = '400 26px "Segoe UI", Arial, sans-serif';
+      ctx.fillText(subtitle, padding, 135);
+    }
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '600 24px "Segoe UI", Arial, sans-serif';
+    ctx.fillText('Modelo', padding, tableTop + 46);
+    ctx.fillText('Precio', width - padding - 160, tableTop + 46);
+
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padding, tableTop + headerHeight);
+    ctx.lineTo(width - padding, tableTop + headerHeight);
+    ctx.stroke();
+
+    ctx.font = '400 22px "Segoe UI", Arial, sans-serif';
+    ctx.fillStyle = '#1f2937';
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+
+    const list = rows.length > 0 ? rows : [{ name: 'Sin productos activos', price: 0 }];
+    list.forEach((row, index) => {
+      const y = tableTop + headerHeight + rowHeight * index + 36;
+      ctx.fillText(row.name, padding, y);
+      ctx.textAlign = 'right';
+      ctx.fillText(row.price ? formatPrice(row.price) : '-', width - padding, y);
+      ctx.textAlign = 'left';
+
+      const lineY = tableTop + headerHeight + rowHeight * (index + 1);
+      ctx.beginPath();
+      ctx.moveTo(padding, lineY);
+      ctx.lineTo(width - padding, lineY);
+      ctx.stroke();
+    });
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'pixels-seminuevos.jpg';
+    link.click();
+  };
+
   const generateAllJpgs = () => {
     generateIphones85Jpg();
     generateIphonesPremiumJpg();
@@ -659,6 +904,7 @@ export default function ProductsAdminPage() {
     generateImmediateDeliveryJpg();
     generateSamsungSeminuevosJpg();
     generateSamsungNuevosJpg();
+    generateGooglePixelsSeminuevosJpg();
   };
 
   const handleSubmit = async (data: Record<string, unknown>) => {
@@ -681,6 +927,29 @@ export default function ProductsAdminPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("¿Estás seguro de que quieres eliminar este producto?")) return;
     await deleteItem(id);
+    fetchProducts();
+  };
+
+  const handleDecreasePrice = async (product: IProduct) => {
+    if (!product._id) return;
+
+    const modelValue =
+      typeof product.model === 'object' && product.model
+        ? product.model._id
+        : product.model;
+    const newPrice = Math.max(1, Number(product.price) - 5000);
+
+    await update(product._id, {
+      model: modelValue,
+      price: newPrice,
+      storage: product.storage,
+      color: product.color,
+      stock: product.stock,
+      active: product.active,
+      batteryHealth: product.batteryHealth,
+      condition: product.condition,
+      description: product.description,
+    });
     fetchProducts();
   };
 
@@ -810,7 +1079,20 @@ export default function ProductsAdminPage() {
     },
   ];
 
-  const sortedProducts = [...products].sort((a, b) => {
+  const filteredProducts = products.filter((product) => {
+    const matchesCondition = productsConditionFilter
+      ? product.condition === productsConditionFilter
+      : true;
+
+    const matchesBrand = productsBrandFilter
+      ? !!product.model && typeof product.model === 'object' &&
+        (product.model as IModel).brand === productsBrandFilter
+      : true;
+
+    return matchesCondition && matchesBrand;
+  });
+
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
     const getModelLabel = (product: IProduct) => {
       const model = product.model
       if (typeof model === "object" && model) {
@@ -901,11 +1183,43 @@ export default function ProductsAdminPage() {
           </>
         )}
 
-        <h2>Productos Registrados ({products.length})</h2>
+        <div className="form-row">
+          <div className="form-group">
+            <label>Filtrar productos por Marca</label>
+            <select
+              value={productsBrandFilter}
+              onChange={(e) => setProductsBrandFilter(e.target.value)}
+            >
+              <option value="">Todas</option>
+              {BRAND_OPTIONS.map((brand) => (
+                <option key={brand} value={brand}>
+                  {brand}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Filtrar por Condición</label>
+            <select
+              value={productsConditionFilter}
+              onChange={(e) => setProductsConditionFilter(e.target.value)}
+            >
+              <option value="">Todas</option>
+              {CONDITION_OPTIONS.map((condition) => (
+                <option key={condition} value={condition}>
+                  {condition}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <h2>Productos Registrados ({sortedProducts.length})</h2>
         <AdminTable<IProduct>
           columns={columns}
           data={sortedProducts}
           loading={productsLoading}
+          onDecrease={handleDecreasePrice}
           onEdit={handleEdit}
           onDelete={handleDelete}
           emptyMessage="No hay productos registrados"

@@ -16,6 +16,7 @@ interface AdminTableProps<T> {
   onEdit?: (row: T) => void
   onDelete?: (id: string) => void
   onView?: (row: T) => void
+  onDecrease?: (row: T) => void
   primaryKey?: keyof T | '_id'
   actions?: boolean
   emptyMessage?: string
@@ -28,6 +29,7 @@ export default function AdminTable<T extends object>({
   onEdit,
   onDelete,
   onView,
+  onDecrease,
   primaryKey = '_id',
   actions = true,
   emptyMessage = 'No records found',
@@ -50,7 +52,7 @@ export default function AdminTable<T extends object>({
                 {col.label}
               </th>
             ))}
-            {actions && (onEdit || onDelete || onView) && <th>Acciones</th>}
+            {actions && (onEdit || onDelete || onView || onDecrease) && <th>Acciones</th>}
           </tr>
         </thead>
         <tbody>
@@ -66,9 +68,18 @@ export default function AdminTable<T extends object>({
                       : String(recordRow[String(col.key)] ?? '')}
                   </td>
                 ))}
-                {actions && (onEdit || onDelete || onView) && (
+                {actions && (onEdit || onDelete || onView || onDecrease) && (
                   <td>
                     <div className="admin-table-actions">
+                      {onDecrease && (
+                        <button
+                          onClick={() => onDecrease(row)}
+                          className="admin-button-secondary"
+                          title="Bajar precio"
+                        >
+                          ⬇️
+                        </button>
+                      )}
                       {onView && (
                         <button
                           onClick={() => onView(row)}
