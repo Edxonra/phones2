@@ -44,6 +44,7 @@ export default function ProductsAdminPage() {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [productsBrandFilter, setProductsBrandFilter] = useState("");
   const [productsConditionFilter, setProductsConditionFilter] = useState("");
+  const [productsBatteryFilter, setProductsBatteryFilter] = useState("");
 
   const scrollToForm = () => {
     if (typeof window === 'undefined') return;
@@ -1089,7 +1090,11 @@ export default function ProductsAdminPage() {
         (product.model as IModel).brand === productsBrandFilter
       : true;
 
-    return matchesCondition && matchesBrand;
+    const matchesBattery = productsBatteryFilter
+      ? product.batteryHealth === productsBatteryFilter
+      : true;
+
+    return matchesCondition && matchesBrand && matchesBattery;
   });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -1208,6 +1213,20 @@ export default function ProductsAdminPage() {
               {CONDITION_OPTIONS.map((condition) => (
                 <option key={condition} value={condition}>
                   {condition}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Filtrar por Batería</label>
+            <select
+              value={productsBatteryFilter}
+              onChange={(e) => setProductsBatteryFilter(e.target.value)}
+            >
+              <option value="">Todas</option>
+              {BATTERY_OPTIONS.map((battery) => (
+                <option key={battery} value={battery}>
+                  {battery}
                 </option>
               ))}
             </select>
