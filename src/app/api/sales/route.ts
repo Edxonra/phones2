@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import Sale from '@/src/lib/models/Sale'
 import '@/src/lib/models/Purchase'
+import '@/src/lib/models/Product'
+import '@/src/lib/models/Model'
 import connectToDatabase from '@/src/lib/mongodb'
 import { sendSuccess, sendError } from '@/src/lib/api/response'
 import { validatePositiveNumber, validateEnum, validateRequired, validateString, ValidationException } from '@/src/lib/api/validation'

@@ -142,13 +142,71 @@ export default function SalesAdminPage() {
     setIsFormVisible(false)
   }
 
-  const productOptions = products.map((p: IProduct) => ({
+  const normalizeId = (value: unknown): string => {
+    if (typeof value === 'string') return value
+    if (value && typeof value === 'object' && 'toString' in value && typeof value.toString === 'function') {
+      return value.toString()
+    }
+    return ''
+  }
+
+  const selectedSalePurchaseId = selectedSale
+    ? normalizeId(typeof selectedSale.purchase === 'string' ? selectedSale.purchase : selectedSale.purchase?._id)
+    : ''
+
+  const soldPurchaseIds = new Set(
+    sales
+      .map((sale) => normalizeId(typeof sale.purchase === 'string' ? sale.purchase : sale.purchase?._id))
+      .filter(Boolean)
+  )
+
+  const availablePurchases = purchases.filter((purchase) => {
+    const purchaseId = normalizeId(purchase._id)
+    return !soldPurchaseIds.has(purchaseId) || purchaseId === selectedSalePurchaseId
+  })
+
+  const purchasesCountByProduct = purchases.reduce<Record<string, number>>((acc, purchase) => {
+    const productId = normalizeId(purchase.product?._id ?? purchase.product)
+    if (!productId) return acc
+    acc[productId] = (acc[productId] || 0) + 1
+    return acc
+  }, {})
+
+  const salesCountByProduct = sales.reduce<Record<string, number>>((acc, sale) => {
+    const productId = normalizeId(sale.product?._id ?? sale.product)
+    if (!productId) return acc
+    acc[productId] = (acc[productId] || 0) + 1
+    return acc
+  }, {})
+
+  if (selectedSale?.product?._id) {
+    const editingProductId = normalizeId(selectedSale.product._id)
+    if (editingProductId) {
+      salesCountByProduct[editingProductId] = Math.max((salesCountByProduct[editingProductId] || 0) - 1, 0)
+    }
+  }
+
+  const availableProductIds = new Set(
+    Object.keys(purchasesCountByProduct).filter((productId) => {
+      const purchasesCount = purchasesCountByProduct[productId] || 0
+      const salesCount = salesCountByProduct[productId] || 0
+      return purchasesCount - salesCount > 0
+    })
+  )
+
+  if (selectedSale?.product?._id) {
+    availableProductIds.add(normalizeId(selectedSale.product._id))
+  }
+
+  const productsWithAvailablePurchases = products.filter((product) => availableProductIds.has(normalizeId(product._id)))
+
+  const productOptions = productsWithAvailablePurchases.map((p: IProduct) => ({
     value: p._id,
     label: `${(p.model as IModel).brand} ${(p.model as IModel).name} - ${p.color}${p.storage ? ` - ${p.storage}` : ''}${p.batteryHealth ? ` - ${p.batteryHealth}` : ''}`,
   }))
 
   const filteredPurchases = selectedProductId
-    ? purchases.filter((purchase) => purchase.product?._id === selectedProductId)
+    ? availablePurchases.filter((purchase) => normalizeId(purchase.product?._id) === selectedProductId)
     : []
 
   const purchaseOptions = filteredPurchases.map((purchase: IPurchase) => ({
@@ -218,6 +276,10 @@ export default function SalesAdminPage() {
     return pending < 0 ? 0 : pending
   }
 
+  const statusBySale = (sale: ISale): Status => {
+    return pendingBySale(sale) === 0 ? 'Cancelado' : 'Pendiente'
+  }
+
   const columns: TableColumn<ISale>[] = [
     {
       key: 'product',
@@ -249,6 +311,7 @@ export default function SalesAdminPage() {
     {
       key: 'status',
       label: 'Estado',
+      render: (_value, row) => statusBySale(row),
     },
   ]
 

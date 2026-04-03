@@ -334,6 +334,28 @@ export default function PaymentsAdminPage() {
     return formatted.replace('₡', 'CRC ')
   }
 
+  const normalizeId = (value: unknown): string => {
+    if (typeof value === 'string') return value
+    if (value && typeof value === 'object' && 'toString' in value && typeof value.toString === 'function') {
+      return value.toString()
+    }
+    return ''
+  }
+
+  const totalPaidBySale = payments.reduce<Record<string, number>>((acc, payment) => {
+    const saleId = normalizeId(payment.sale?._id)
+    if (!saleId) return acc
+    acc[saleId] = (acc[saleId] || 0) + (payment.amount || 0)
+    return acc
+  }, {})
+
+  const paymentSelectableSales = sales.filter((sale) => {
+    const saleId = normalizeId(sale._id)
+    const totalPaid = totalPaidBySale[saleId] || 0
+    const hasPendingBalance = (sale.salePrice || 0) - totalPaid > 0
+    return hasPendingBalance || saleId === formData.sale
+  })
+
   const loadImageDataUrl = (src: string) => {
     if (!src) return Promise.resolve<string | null>(null)
     const resolved = src.startsWith('http') ? src : new URL(src, window.location.origin).toString()
@@ -448,7 +470,7 @@ export default function PaymentsAdminPage() {
                 <label>Venta *</label>
                 <select value={formData.sale} onChange={(e) => setFormData({ ...formData, sale: e.target.value })}>
                   <option value="" disabled>Seleccionar la venta</option>
-                  {sales.map((sale) => (
+                  {paymentSelectableSales.map((sale) => (
                     <option key={sale._id} value={sale._id}>
                       {sale.client} - {sale.product.model.name} - {sale.product.color}{sale.product.storage ? ` - ${sale.product.storage}` : ''}{sale.product.batteryHealth ? ` - ${sale.product.batteryHealth}` : ''}
                     </option>

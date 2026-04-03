@@ -45,6 +45,10 @@ PurchaseSchema.index({ provider: 1 })
 PurchaseSchema.index({ purchaseDate: -1 })
 PurchaseSchema.index({ product: 1, provider: 1 })
 
+if (process.env.NODE_ENV !== 'production' && mongoose.models.Purchase) {
+  delete mongoose.models.Purchase
+}
+
 const Purchase = mongoose.models.Purchase || mongoose.model<IPurchase>('Purchase', PurchaseSchema)
 
 export default Purchase
