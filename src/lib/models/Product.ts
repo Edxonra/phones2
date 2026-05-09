@@ -5,7 +5,7 @@ export interface IProduct {
   model: Types.ObjectId;
   price: number;
   storage?: Storage;
-  color: Color;
+  color?: Color;
   stock: number;
   active: boolean;
   batteryHealth?: Battery
@@ -40,7 +40,7 @@ const ProductSchema: Schema = new Schema({
       values: COLOR_OPTIONS as unknown as string[],
       message: `Color must be one of: ${COLOR_OPTIONS.join(', ')}`,
     },
-    required: [true, 'Color is required']
+    required: false,
   },
   stock: {
     type: Number,

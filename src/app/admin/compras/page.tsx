@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useIsAdmin } from '@/src/hooks/useIsAdmin'
 import { useCrud } from '@/src/hooks/useCrud'
@@ -8,6 +8,7 @@ import AdminTable, { TableColumn } from '@/src/components/AdminTable'
 import AdminForm, { FormField } from '@/src/components/AdminForm'
 import Alert from '@/src/components/Alert'
 import { Provider, PROVIDER_OPTIONS } from '@/src/shared/purchase.enum'
+import { CATEGORY_OPTIONS } from '@/src/shared/model.enum'
 
 interface IModel {
   _id: string
@@ -47,6 +48,8 @@ export default function PurchasesAdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [selectedPurchase, setSelectedPurchase] = useState<IPurchase | null>(null)
   const [selectedProvider, setSelectedProvider] = useState<string>('')
+  const [selectedProductCategory, setSelectedProductCategory] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
 
   const scrollToForm = () => {
     if (typeof window === 'undefined') return
@@ -105,6 +108,9 @@ export default function PurchasesAdminPage() {
     if (purchase.provider) {
       setSelectedProvider(purchase.provider)
     }
+    if (purchase.product?.model?.category) {
+      setSelectedProductCategory(purchase.product.model.category)
+    }
     setIsFormVisible(true)
     scrollToForm()
   }
@@ -119,8 +125,16 @@ export default function PurchasesAdminPage() {
     setEditingId(null)
     setSelectedPurchase(null)
     setSelectedProvider('')
+    setSelectedProductCategory('')
     setIsFormVisible(false)
   }
+
+  const filteredPurchases = useMemo(() => {
+    return purchases.filter((purchase) => {
+      if (!categoryFilter) return true
+      return purchase.product?.model?.category === categoryFilter
+    })
+  }, [purchases, categoryFilter])
 
   const providerBrandsMap: Record<string, string[] | null> = {
     Apple: ['Apple'],
@@ -131,9 +145,14 @@ export default function PurchasesAdminPage() {
   }
 
   const allowedBrands = selectedProvider ? providerBrandsMap[selectedProvider] : null
-  const filteredProducts = selectedProvider
-    ? products.filter((p) => (allowedBrands ? allowedBrands.includes(p.model.brand) : true))
-    : products
+  const filteredProducts = products
+    .filter((p) => {
+      if ((selectedProvider === 'Amazon' || selectedProvider === 'Otro') && selectedProductCategory === 'Accesorios') {
+        return p.model.brand === 'Apple'
+      }
+      return selectedProvider ? (allowedBrands ? allowedBrands.includes(p.model.brand) : true) : true
+    })
+    .filter((p) => (selectedProductCategory ? p.model.category === selectedProductCategory : true))
 
   const productOptions = filteredProducts.map((p: IProduct) => ({
     value: p._id,
@@ -148,6 +167,14 @@ export default function PurchasesAdminPage() {
       required: true,
       options: PROVIDER_OPTIONS.map((p) => ({ value: p, label: p })),
       onChange: (value) => setSelectedProvider(String(value ?? '')),
+    },
+    {
+      name: 'category',
+      label: 'Categoría',
+      type: 'select',
+      required: false,
+      options: [{ value: '', label: 'Todas' }, ...CATEGORY_OPTIONS.map((category) => ({ value: category, label: category }))],
+      onChange: (value) => setSelectedProductCategory(String(value ?? '')),
     },
     {
       name: 'product',
@@ -229,6 +256,7 @@ export default function PurchasesAdminPage() {
             fields={formFields}
             initialValues={selectedPurchase ? {
               provider: selectedPurchase.provider,
+              category: selectedPurchase.product?.model?.category || '',
               product: selectedPurchase.product?._id,
               cost: selectedPurchase.cost,
               purchaseDate: formatDateInput(selectedPurchase.purchaseDate),
@@ -240,10 +268,27 @@ export default function PurchasesAdminPage() {
           />
         )}
 
-        <h2>Compras Registradas ({purchases.length})</h2>
+        <div className="admin-filters">
+          <div className="form-group">
+            <label>Filtrar por Categoría</label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            >
+              <option value="">Todas</option>
+              {CATEGORY_OPTIONS.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <h2>Compras Registradas ({filteredPurchases.length})</h2>
         <AdminTable<IPurchase>
           columns={columns}
-          data={purchases}
+          data={filteredPurchases}
           loading={loading}
           onEdit={handleEdit}
           onDelete={handleDelete}

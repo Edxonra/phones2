@@ -997,9 +997,9 @@ export default function ProductsAdminPage() {
     },
     {
       name: "color",
-      label: "Color",
+      label: "Color (opcional)",
       type: "select",
-      required: true,
+      required: false,
       options: COLOR_OPTIONS.map((c) => ({ value: c, label: c })),
     },
     {

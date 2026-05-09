@@ -17,12 +17,13 @@ export async function PUT(
 
     const { model, price, storage, color, stock, active, batteryHealth, condition, description } = body
     const storageValue = typeof storage === 'string' && storage.trim() !== '' ? storage : undefined
+    const colorValue = typeof color === 'string' && color.trim() !== '' ? color : undefined
     const batteryValue = typeof batteryHealth === 'string' && batteryHealth.trim() !== '' ? batteryHealth : undefined
 
     // Validate required fields
     validateRequired(
-      { model, price, color, stock, condition },
-      ['model', 'price', 'color', 'stock', 'condition']
+      { model, price, stock, condition },
+      ['model', 'price', 'stock', 'condition']
     )
 
     // Validate numeric fields
@@ -33,7 +34,9 @@ export async function PUT(
     if (storageValue) {
       validateEnum(storageValue, STORAGE_OPTIONS as unknown as readonly string[], 'storage')
     }
-    validateEnum(color, COLOR_OPTIONS as unknown as readonly string[], 'color')
+    if (colorValue) {
+      validateEnum(colorValue, COLOR_OPTIONS as unknown as readonly string[], 'color')
+    }
     if (batteryValue) {
       validateEnum(batteryValue, BATTERY_OPTIONS as unknown as readonly string[], 'batteryHealth')
     }
@@ -42,7 +45,7 @@ export async function PUT(
     const setDoc: {
       model: unknown
       price: number
-      color: unknown
+      color?: unknown
       stock: number
       active: boolean
       condition: unknown
@@ -52,7 +55,6 @@ export async function PUT(
     } = {
       model,
       price: Number(price),
-      color,
       stock: Number(stock),
       active: active ?? true,
       condition,
@@ -65,6 +67,12 @@ export async function PUT(
       setDoc.storage = storageValue
     } else {
       unsetDoc.storage = ''
+    }
+
+    if (colorValue) {
+      setDoc.color = colorValue
+    } else {
+      unsetDoc.color = ''
     }
 
     if (batteryValue) {

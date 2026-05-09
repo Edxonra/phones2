@@ -7,6 +7,7 @@ export const CATEGORY_OPTIONS = [
   'Watch',
   'Tablet',
   'Audio',
+  'Accesorios',
 ] as const
 export type Category = typeof CATEGORY_OPTIONS[number]
 
@@ -16,4 +17,5 @@ export const CATEGORY_ITEM_OPTIONS: Record<Category, string[]> = {
   Watch: ['Apple Watch', 'Galaxy Watch'],
   Tablet: ['iPad', 'Galaxy Tab'],
   Audio: ['AirPods'],
+  Accesorios: [],
 }
