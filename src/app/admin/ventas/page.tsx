@@ -135,6 +135,98 @@ export default function SalesAdminPage() {
     fetchSales()
   }
 
+  const formatProductLabel = (product: IProduct) => {
+    const details = [product.color, product.storage, product.batteryHealth].filter(Boolean)
+    return `${product.model.brand} ${product.model.name}${details.length ? ` - ${details.join(' - ')}` : ''}`
+  }
+
+  const formatInvoicePrice = (price: number) => {
+    if (price >= 1000) {
+      const thousand = price / 1000
+      return `CRC ${thousand % 1 === 0 ? `${thousand} mil` : `${thousand.toFixed(1)} mil`}`
+    }
+    return `CRC ${price}`
+  }
+
+  const loadImageDataUrl = (src: string) => {
+    if (typeof window === 'undefined' || !src) return Promise.resolve<string | null>(null)
+    const resolved = src.startsWith('http') ? src : new URL(src, window.location.origin).toString()
+    return new Promise<string | null>((resolve) => {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width
+        canvas.height = img.height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          resolve(null)
+          return
+        }
+        ctx.drawImage(img, 0, 0)
+        resolve(canvas.toDataURL('image/png'))
+      }
+      img.onerror = () => resolve(null)
+      img.src = resolved
+    })
+  }
+
+  const handleGenerateInvoice = async (sale: ISale) => {
+    try {
+      const { jsPDF } = await import('jspdf')
+      const logoDataUrl = await loadImageDataUrl('/logo.jpg')
+      const imageDataUrl = sale.product.model.image ? await loadImageDataUrl(sale.product.model.image) : null
+      const invoiceNumber = sale._id ? `FAC-${sale._id}` : 'FAC-SIN-ID'
+      const productLabel = formatProductLabel(sale.product)
+      const paid = paymentsBySale[sale._id || ''] || 0
+      const pending = Math.max((sale.salePrice || 0) - paid, 0)
+
+      const doc = new jsPDF()
+      if (logoDataUrl) {
+        doc.addImage(logoDataUrl, 'PNG', 14, 10, 24, 24)
+      }
+      doc.setFontSize(18)
+      doc.text('Factura de venta', 42, 20)
+      doc.setFontSize(11)
+      doc.text(`Factura No: ${invoiceNumber}`, 42, 28)
+      doc.text(`Fecha de venta: ${formatSaleDate(sale.saleDate)}`, 14, 40)
+      doc.text(`Cliente: ${sale.client}`, 14, 48)
+      doc.line(14, 52, 196, 52)
+
+      doc.setFontSize(12)
+      doc.text('Detalle del producto', 14, 62)
+      doc.setFontSize(10)
+      doc.text('Descripción', 14, 70)
+      doc.text('Precio', 166, 70, { align: 'right' })
+      doc.line(14, 73, 196, 73)
+      doc.text(productLabel, 14, 82)
+      doc.text(formatInvoicePrice(sale.salePrice), 166, 82, { align: 'right' })
+      doc.line(14, 86, 196, 86)
+
+      let y = 102
+      doc.setFontSize(12)
+      doc.text('Resumen', 14, y)
+      y += 8
+      doc.setFontSize(10)
+      doc.text(`Total venta: ${formatInvoicePrice(sale.salePrice)}`, 14, y)
+      y += 6
+      doc.text(`Total pagado: ${formatInvoicePrice(paid)}`, 14, y)
+      y += 6
+      doc.text(`Saldo pendiente: ${formatInvoicePrice(pending)}`, 14, y)
+      y += 6
+      doc.text(`Estado: ${statusBySale(sale)}`, 14, y)
+
+      if (imageDataUrl) {
+        doc.addImage(imageDataUrl, 'PNG', 140, 42, 50, 50)
+      }
+
+      const fileId = sale._id || 'sin-id'
+      doc.save(`factura-venta-${fileId}.pdf`)
+    } catch {
+      setError('No se pudo generar la factura de venta')
+    }
+  }
+
   const resetForm = () => {
     setEditingId(null)
     setSelectedSale(null)
@@ -202,7 +294,7 @@ export default function SalesAdminPage() {
 
   const productOptions = productsWithAvailablePurchases.map((p: IProduct) => ({
     value: p._id,
-    label: `${(p.model as IModel).brand} ${(p.model as IModel).name} - ${p.color}${p.storage ? ` - ${p.storage}` : ''}${p.batteryHealth ? ` - ${p.batteryHealth}` : ''}`,
+    label: formatProductLabel(p),
   }))
 
   const filteredPurchases = selectedProductId
@@ -286,7 +378,7 @@ export default function SalesAdminPage() {
       label: 'Producto',
       render: (value) => {
         const product = value as IProduct
-        return `${product.model.brand} ${product.model.name}`
+        return formatProductLabel(product)
       },
     },
     {
@@ -358,6 +450,7 @@ export default function SalesAdminPage() {
           loading={loading}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onInvoice={handleGenerateInvoice}
           emptyMessage="No hay ventas registradas"
         />
       </div>

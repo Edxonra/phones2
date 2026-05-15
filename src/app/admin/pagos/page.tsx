@@ -61,7 +61,7 @@ interface IProductPopulated {
   model: IModel
   price: number
   storage?: Storage
-  color: Color
+  color?: Color
   batteryHealth?: Battery
 }
 
@@ -85,6 +85,11 @@ export default function PaymentsAdminPage() {
   const scrollToForm = () => {
     if (typeof window === 'undefined') return
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const formatProductLabel = (product: IProductPopulated) => {
+    const details = [product.color, product.storage, product.batteryHealth].filter(Boolean)
+    return `${product.model.brand} ${product.model.name}${details.length ? ` - ${details.join(' - ')}` : ''}`
   }
 
   const [formData, setFormData] = useState<IPaymentForm>({
@@ -394,7 +399,7 @@ export default function PaymentsAdminPage() {
       const totalPaid = salePayments.reduce((sum, item) => sum + (item.amount || 0), 0)
       const remaining = Math.max(0, sale.salePrice - totalPaid)
       const invoiceNumber = payment._id ? `FAC-${payment._id}` : 'FAC-SIN-ID'
-      const productLabel = `${sale.product.model.brand} ${sale.product.model.name} - ${sale.product.color}${sale.product.storage ? ` - ${sale.product.storage}` : ''}`
+      const productLabel = formatProductLabel(sale.product)
       const imageDataUrl = await loadImageDataUrl(sale.product.model.image)
 
       const doc = new jsPDF()
@@ -472,7 +477,7 @@ export default function PaymentsAdminPage() {
                   <option value="" disabled>Seleccionar la venta</option>
                   {paymentSelectableSales.map((sale) => (
                     <option key={sale._id} value={sale._id}>
-                      {sale.client} - {sale.product.model.name} - {sale.product.color}{sale.product.storage ? ` - ${sale.product.storage}` : ''}{sale.product.batteryHealth ? ` - ${sale.product.batteryHealth}` : ''}
+                      {sale.client} - {formatProductLabel(sale.product)}
                     </option>
                   ))}
                 </select>
@@ -539,7 +544,7 @@ export default function PaymentsAdminPage() {
                   <option value="" disabled>Seleccionar la venta</option>
                   {sales.map((sale) => (
                     <option key={sale._id} value={sale._id}>
-                      {sale.client} - {sale.product.model.name} - {sale.product.color}{sale.product.storage ? ` - ${sale.product.storage}` : ''}{sale.product.batteryHealth ? ` - ${sale.product.batteryHealth}` : ''}
+                      {sale.client} - {formatProductLabel(sale.product)}
                     </option>
                   ))}
                 </select>

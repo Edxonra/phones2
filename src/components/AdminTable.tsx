@@ -16,6 +16,7 @@ interface AdminTableProps<T> {
   onEdit?: (row: T) => void
   onDelete?: (id: string) => void
   onView?: (row: T) => void
+  onInvoice?: (row: T) => void
   onDecrease?: (row: T) => void
   primaryKey?: keyof T | '_id'
   actions?: boolean
@@ -29,6 +30,7 @@ export default function AdminTable<T extends object>({
   onEdit,
   onDelete,
   onView,
+  onInvoice,
   onDecrease,
   primaryKey = '_id',
   actions = true,
@@ -52,7 +54,7 @@ export default function AdminTable<T extends object>({
                 {col.label}
               </th>
             ))}
-            {actions && (onEdit || onDelete || onView || onDecrease) && <th>Acciones</th>}
+            {actions && (onEdit || onDelete || onView || onInvoice || onDecrease) && <th>Acciones</th>}
           </tr>
         </thead>
         <tbody>
@@ -78,6 +80,15 @@ export default function AdminTable<T extends object>({
                           title="Bajar precio"
                         >
                           ⬇️
+                        </button>
+                      )}
+                      {onInvoice && (
+                        <button
+                          onClick={() => onInvoice(row)}
+                          className="admin-button-secondary"
+                          title="Generar factura"
+                        >
+                          🧾
                         </button>
                       )}
                       {onView && (
