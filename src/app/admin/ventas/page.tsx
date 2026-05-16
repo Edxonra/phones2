@@ -14,6 +14,7 @@ interface IModel {
   name: string
   brand: string
   category: string
+  image?: string
 }
 
 interface IProduct {
@@ -71,6 +72,7 @@ export default function SalesAdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [selectedSale, setSelectedSale] = useState<ISale | null>(null)
   const [selectedProductId, setSelectedProductId] = useState<string>('')
+  const [invoiceError, setInvoiceError] = useState<string | null>(null)
 
   const scrollToForm = () => {
     if (typeof window === 'undefined') return
@@ -223,7 +225,7 @@ export default function SalesAdminPage() {
       const fileId = sale._id || 'sin-id'
       doc.save(`factura-venta-${fileId}.pdf`)
     } catch {
-      setError('No se pudo generar la factura de venta')
+      setInvoiceError('No se pudo generar la factura de venta')
     }
   }
 
