@@ -43,6 +43,7 @@ interface ISale {
   product: IProductPopulated
   client: string
   salePrice: number
+  interest?: number
   saleDate: string
   status: Status
   notes?: string
