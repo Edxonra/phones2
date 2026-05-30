@@ -6,6 +6,7 @@ export interface ISale extends Document {
   purchase: Types.ObjectId
   client: string
   salePrice: number
+  interest: number
   saleDate: Date
   status: Status
   notes?: string
@@ -33,6 +34,12 @@ const SaleSchema = new Schema({
     type: Number,
     required: true,
     min: 0,
+  },
+  interest: {
+    type: Number,
+    required: true,
+    min: 0,
+    default: 0,
   },
   saleDate: {
     type: Date,

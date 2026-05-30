@@ -25,6 +25,7 @@ interface ISale {
   product: IProduct;
   client: string;
   salePrice: number;
+  interest?: number;
   saleDate: string;
   status: string;
   purchase?: {
@@ -219,13 +220,15 @@ export default function ProfitRegisterPage() {
       const purchaseCost = purchase.cost || 0
       const productPrice = product?.price || 0
       const salePrice = sale ? (sale.salePrice || 0) : productPrice
+    const interest = sale ? (sale.interest || 0) : 0
+    const totalPrice = salePrice + interest
 
       return {
         id: purchaseId ? `purchase-${purchaseId}` : `purchase-missing-${productId || index}`,
         date: sale ? sale.saleDate : '',
         client: sale ? sale.client : '',
         productLabel: product ? `${product.model.brand} ${product.model.name}` : 'Producto desconocido',
-        salePrice,
+        salePrice: totalPrice,
         paid,
         purchaseCost,
         expenseTotal,
@@ -289,7 +292,7 @@ export default function ProfitRegisterPage() {
     const esperadas = filteredRows
       .reduce((sum, r) => sum + (r.salePrice || 0), 0);
     const ventasRealizadas = filteredSales
-      .reduce((sum, sale) => sum + (sale.salePrice || 0), 0);
+      .reduce((sum, sale) => sum + ((sale.salePrice || 0) + (sale.interest || 0)), 0);
     return {
       ventas: ventasRealizadas,
       ingresos,

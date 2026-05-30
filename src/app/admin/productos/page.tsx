@@ -43,6 +43,7 @@ export default function ProductsAdminPage() {
   const [brandFilter, setBrandFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [productsBrandFilter, setProductsBrandFilter] = useState("");
+  const [productsCategoryFilter, setProductsCategoryFilter] = useState("");
   const [productsConditionFilter, setProductsConditionFilter] = useState("");
   const [productsBatteryFilter, setProductsBatteryFilter] = useState("");
 
@@ -1090,11 +1091,16 @@ export default function ProductsAdminPage() {
         (product.model as IModel).brand === productsBrandFilter
       : true;
 
+    const matchesCategory = productsCategoryFilter
+      ? !!product.model && typeof product.model === 'object' &&
+        (product.model as IModel).category === productsCategoryFilter
+      : true;
+
     const matchesBattery = productsBatteryFilter
       ? product.batteryHealth === productsBatteryFilter
       : true;
 
-    return matchesCondition && matchesBrand && matchesBattery;
+    return matchesCondition && matchesBrand && matchesCategory && matchesBattery;
   });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -1199,6 +1205,20 @@ export default function ProductsAdminPage() {
               {BRAND_OPTIONS.map((brand) => (
                 <option key={brand} value={brand}>
                   {brand}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Filtrar por Categoría</label>
+            <select
+              value={productsCategoryFilter}
+              onChange={(e) => setProductsCategoryFilter(e.target.value)}
+            >
+              <option value="">Todas</option>
+              {CATEGORY_OPTIONS.map((category) => (
+                <option key={category} value={category}>
+                  {category}
                 </option>
               ))}
             </select>

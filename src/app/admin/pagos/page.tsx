@@ -357,7 +357,8 @@ export default function PaymentsAdminPage() {
   const paymentSelectableSales = sales.filter((sale) => {
     const saleId = normalizeId(sale._id)
     const totalPaid = totalPaidBySale[saleId] || 0
-    const hasPendingBalance = (sale.salePrice || 0) - totalPaid > 0
+    const totalDue = (sale.salePrice || 0) + (sale.interest || 0)
+    const hasPendingBalance = totalDue - totalPaid > 0
     return hasPendingBalance || saleId === formData.sale
   })
 
@@ -397,7 +398,8 @@ export default function PaymentsAdminPage() {
             (parseLocalDate(b.paymentDate)?.getTime() ?? 0)
         )
       const totalPaid = salePayments.reduce((sum, item) => sum + (item.amount || 0), 0)
-      const remaining = Math.max(0, sale.salePrice - totalPaid)
+      const saleTotal = (sale.salePrice || 0) + (sale.interest || 0)
+      const remaining = Math.max(0, saleTotal - totalPaid)
       const invoiceNumber = payment._id ? `FAC-${payment._id}` : 'FAC-SIN-ID'
       const productLabel = formatProductLabel(sale.product)
       const imageDataUrl = await loadImageDataUrl(sale.product.model.image)
@@ -414,15 +416,26 @@ export default function PaymentsAdminPage() {
       doc.text(`Cliente: ${sale.client}`, 14, 48)
       doc.text(`Articulo: ${productLabel}`, 14, 56)
       doc.text(`Abono: ${formatInvoicePrice(payment.amount)}`, 14, 64)
-      doc.text(`Total venta: ${formatInvoicePrice(sale.salePrice)}`, 14, 72)
-      doc.text(`Total pagado: ${formatInvoicePrice(totalPaid)}`, 14, 80)
-      doc.text(`Saldo pendiente: ${formatInvoicePrice(remaining)}`, 14, 88)
+      doc.text(`Precio venta: ${formatInvoicePrice(sale.salePrice)}`, 14, 72)
+      let paymentsStartY = 104
+      if ((sale.interest || 0) > 0) {
+        doc.text(`Interés: ${formatInvoicePrice(sale.interest || 0)}`, 14, 80)
+        doc.text(`Total venta: ${formatInvoicePrice(saleTotal)}`, 14, 88)
+        doc.text(`Total pagado: ${formatInvoicePrice(totalPaid)}`, 14, 96)
+        doc.text(`Saldo pendiente: ${formatInvoicePrice(remaining)}`, 14, 104)
+        paymentsStartY = 118
+      } else {
+        doc.text(`Total venta: ${formatInvoicePrice(saleTotal)}`, 14, 80)
+        doc.text(`Total pagado: ${formatInvoicePrice(totalPaid)}`, 14, 88)
+        doc.text(`Saldo pendiente: ${formatInvoicePrice(remaining)}`, 14, 96)
+        paymentsStartY = 110
+      }
 
       if (imageDataUrl) {
         doc.addImage(imageDataUrl, 'PNG', 140, 44, 50, 50)
       }
 
-      let y = 104
+      let y = paymentsStartY
       doc.setFontSize(12)
       doc.text('Pagos de la venta', 14, y)
       y += 8

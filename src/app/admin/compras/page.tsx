@@ -22,10 +22,10 @@ interface IProduct {
   model: IModel
   price: number
   storage?: string
-  color: string
+  color?: string
   stock: number
   active: boolean
-  batteryHealth: string
+  batteryHealth?: string
 }
 
 interface IPurchase {
@@ -154,10 +154,13 @@ export default function PurchasesAdminPage() {
     })
     .filter((p) => (selectedProductCategory ? p.model.category === selectedProductCategory : true))
 
-  const productOptions = filteredProducts.map((p: IProduct) => ({
-    value: p._id,
-    label: `${p.model.brand} ${p.model.name} - ${p.color}${p.storage ? ` - ${p.storage}` : ''}${p.batteryHealth ? ` - ${p.batteryHealth}` : ''}`,
-  }))
+  const productOptions = filteredProducts.map((p: IProduct) => {
+    const details = [p.color, p.storage, p.batteryHealth].filter(Boolean)
+    return {
+      value: p._id,
+      label: `${p.model.brand} ${p.model.name}${details.length ? ` - ${details.join(' - ')}` : ''}`,
+    }
+  })
 
   const formFields: FormField[] = [
     {

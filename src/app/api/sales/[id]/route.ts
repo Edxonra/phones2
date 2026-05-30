@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import Sale from '@/src/lib/models/Sale'
 import connectToDatabase from '@/src/lib/mongodb'
 import { sendSuccess, sendError, sendMessage } from '@/src/lib/api/response'
-import { validatePositiveNumber, validateEnum, validateRequired, validateString, ValidationException } from '@/src/lib/api/validation'
+import { validateNonNegativeNumber, validatePositiveNumber, validateEnum, validateRequired, validateString, ValidationException } from '@/src/lib/api/validation'
 import { STATUS_OPTIONS } from '@/src/shared/sale.enum'
 
 export async function PUT(
@@ -14,7 +14,7 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
 
-    const { product, client, salePrice, saleDate, status, notes } = body
+    const { product, client, salePrice, interest, saleDate, status, notes } = body
 
     // Validate required fields
     validateRequired(
@@ -25,6 +25,9 @@ export async function PUT(
     // Validate specific fields
     validateString(client, 'client')
     validatePositiveNumber(salePrice, 'salePrice')
+    if (interest !== undefined && interest !== null && interest !== '') {
+      validateNonNegativeNumber(interest, 'interest')
+    }
     validateEnum(status, STATUS_OPTIONS as unknown as readonly string[], 'status')
 
     const updatedSale = await Sale.findByIdAndUpdate(
@@ -33,6 +36,7 @@ export async function PUT(
         product,
         client,
         salePrice: Number(salePrice),
+        interest: Number(interest ?? 0),
         saleDate,
         status,
         notes,

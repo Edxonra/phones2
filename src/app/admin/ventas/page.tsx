@@ -47,6 +47,7 @@ interface ISale {
   purchase: IPurchase | string
   client: string
   salePrice: number
+  interest?: number
   saleDate: string
   status: Status
   notes?: string
@@ -181,7 +182,8 @@ export default function SalesAdminPage() {
       const invoiceNumber = sale._id ? `FAC-${sale._id}` : 'FAC-SIN-ID'
       const productLabel = formatProductLabel(sale.product)
       const paid = paymentsBySale[sale._id || ''] || 0
-      const pending = Math.max((sale.salePrice || 0) - paid, 0)
+      const saleTotal = (sale.salePrice || 0) + (sale.interest || 0)
+      const pending = Math.max(saleTotal - paid, 0)
 
       const doc = new jsPDF()
       if (logoDataUrl) {
@@ -206,11 +208,17 @@ export default function SalesAdminPage() {
       doc.line(14, 86, 196, 86)
 
       let y = 102
+      if ((sale.interest || 0) > 0) {
+        doc.text('Interés adicional', 14, 92)
+        doc.text(formatInvoicePrice(sale.interest || 0), 166, 92, { align: 'right' })
+        doc.line(14, 96, 196, 96)
+        y = 106
+      }
       doc.setFontSize(12)
       doc.text('Resumen', 14, y)
       y += 8
       doc.setFontSize(10)
-      doc.text(`Total venta: ${formatInvoicePrice(sale.salePrice)}`, 14, y)
+      doc.text(`Total venta: ${formatInvoicePrice(saleTotal)}`, 14, y)
       y += 6
       doc.text(`Total pagado: ${formatInvoicePrice(paid)}`, 14, y)
       y += 6
@@ -343,6 +351,15 @@ export default function SalesAdminPage() {
       step: 0.01,
     },
     {
+      name: 'interest',
+      label: 'Interés adicional',
+      type: 'number',
+      required: false,
+      min: 0,
+      step: 0.01,
+      placeholder: '0',
+    },
+    {
       name: 'saleDate',
       label: 'Fecha de Venta',
       type: 'date',
@@ -366,7 +383,8 @@ export default function SalesAdminPage() {
 
   const pendingBySale = (sale: ISale) => {
     const paid = paymentsBySale[sale._id || ''] || 0
-    const pending = (sale.salePrice || 0) - paid
+    const saleTotal = (sale.salePrice || 0) + (sale.interest || 0)
+    const pending = saleTotal - paid
     return pending < 0 ? 0 : pending
   }
 
@@ -389,8 +407,18 @@ export default function SalesAdminPage() {
     },
     {
       key: 'salePrice',
-      label: 'Precio',
+      label: 'Precio base',
       render: (value) => formatPrice(Number(value)),
+    },
+    {
+      key: 'interest',
+      label: 'Interés',
+      render: (value) => formatPrice(Number(value || 0)),
+    },
+    {
+      key: 'total',
+      label: 'Total',
+      render: (_value, row) => formatPrice((row.salePrice || 0) + (row.interest || 0)),
     },
     {
       key: 'pending',
@@ -419,6 +447,7 @@ export default function SalesAdminPage() {
         <h1>Gestionar Ventas</h1>
 
         {error && <Alert type="error" message={error} onClose={clearMessages} />}
+        {invoiceError && <Alert type="error" message={invoiceError} onClose={() => setInvoiceError(null)} />}
         {success && <Alert type="success" message={success} onClose={clearMessages} />}
 
         <button
@@ -436,6 +465,7 @@ export default function SalesAdminPage() {
               purchase: typeof selectedSale.purchase === 'string' ? selectedSale.purchase : selectedSale.purchase?._id,
               client: selectedSale.client,
               salePrice: selectedSale.salePrice,
+              interest: selectedSale.interest ?? 0,
               saleDate: selectedSale.saleDate ? new Date(selectedSale.saleDate).toISOString().split('T')[0] : '',
               notes: selectedSale.notes || '',
             } : {}}

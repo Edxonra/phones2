@@ -11,8 +11,9 @@ async function syncSaleStatus(saleId: string) {
 
   const payments = await Payment.find({ sale: saleId }).select('amount')
   const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0)
+  const totalDue = (sale.salePrice || 0) + (sale.interest || 0)
 
-  const newStatus = totalPaid >= sale.salePrice ? 'Cancelado' : 'Pendiente'
+  const newStatus = totalPaid >= totalDue ? 'Cancelado' : 'Pendiente'
   if (sale.status !== newStatus) {
     await Sale.findByIdAndUpdate(saleId, { status: newStatus })
   }
