@@ -899,6 +899,386 @@ export default function ProductsAdminPage() {
     link.click();
   };
 
+  const generateAppleWatchesJpg = () => {
+    const title = 'Apple Watch Nuevos';
+    const subtitle = '';
+
+    const filtered = products.filter((product) => {
+      if (!product.active) return false;
+      if (!product.model || typeof product.model !== 'object') return false;
+      const model = product.model as IModel;
+      return model.brand === 'Apple' && model.category === 'Watch';
+    });
+
+    const grouped = new Map<string, { name: string; price: number }>();
+    filtered.forEach((product) => {
+      const model = product.model as IModel;
+      const key = model._id;
+      const existing = grouped.get(key);
+      if (!existing || product.price < existing.price) {
+        grouped.set(key, {
+          name: `${model.brand} ${model.name}`,
+          price: product.price,
+        });
+      }
+    });
+
+    const rows = Array.from(grouped.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, 'es', { sensitivity: 'base', numeric: true })
+    );
+
+    const width = 1200;
+    const rowHeight = 54;
+    const headerHeight = 70;
+    const padding = 60;
+    const tableTop = 210;
+    const tableHeight = headerHeight + Math.max(rows.length, 1) * rowHeight;
+    const height = tableTop + tableHeight + padding;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#f6f6f2';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '700 46px "Segoe UI", Arial, sans-serif';
+    ctx.fillText(title, padding, 90);
+
+    ctx.fillStyle = '#334155';
+    ctx.font = '400 26px "Segoe UI", Arial, sans-serif';
+    ctx.fillText(subtitle, padding, 135);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '600 24px "Segoe UI", Arial, sans-serif';
+    ctx.fillText('Modelo', padding, tableTop + 46);
+    ctx.fillText('Precio', width - padding - 160, tableTop + 46);
+
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padding, tableTop + headerHeight);
+    ctx.lineTo(width - padding, tableTop + headerHeight);
+    ctx.stroke();
+
+    ctx.font = '400 22px "Segoe UI", Arial, sans-serif';
+    ctx.fillStyle = '#1f2937';
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+
+    const list = rows.length > 0 ? rows : [{ name: 'Sin productos activos', price: 0 }];
+    list.forEach((row, index) => {
+      const y = tableTop + headerHeight + rowHeight * index + 36;
+      ctx.fillText(row.name, padding, y);
+      ctx.textAlign = 'right';
+      ctx.fillText(row.price ? formatPrice(row.price) : '-', width - padding, y);
+      ctx.textAlign = 'left';
+
+      const lineY = tableTop + headerHeight + rowHeight * (index + 1);
+      ctx.beginPath();
+      ctx.moveTo(padding, lineY);
+      ctx.lineTo(width - padding, lineY);
+      ctx.stroke();
+    });
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'apple-watch.jpg';
+    link.click();
+  };
+
+  const generateAirpodsJpg = () => {
+    const title = 'AirPods Nuevos';
+    const subtitle = '';
+
+    const filtered = products.filter((product) => {
+      if (!product.active) return false;
+      if (!product.model || typeof product.model !== 'object') return false;
+      const model = product.model as IModel;
+      return (
+        model.brand === 'Apple' &&
+        model.category === 'Audio' &&
+        model.name.toLowerCase().includes('airpods')
+      );
+    });
+
+    const grouped = new Map<string, { name: string; price: number }>();
+    filtered.forEach((product) => {
+      const model = product.model as IModel;
+      const key = model._id;
+      const existing = grouped.get(key);
+      if (!existing || product.price < existing.price) {
+        grouped.set(key, {
+          name: `${model.brand} ${model.name}`,
+          price: product.price,
+        });
+      }
+    });
+
+    const rows = Array.from(grouped.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, 'es', { sensitivity: 'base', numeric: true })
+    );
+
+    const width = 1200;
+    const rowHeight = 54;
+    const headerHeight = 70;
+    const padding = 60;
+    const tableTop = 210;
+    const tableHeight = headerHeight + Math.max(rows.length, 1) * rowHeight;
+    const height = tableTop + tableHeight + padding;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#f6f6f2';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '700 46px "Segoe UI", Arial, sans-serif';
+    ctx.fillText(title, padding, 90);
+
+    ctx.fillStyle = '#334155';
+    ctx.font = '400 26px "Segoe UI", Arial, sans-serif';
+    ctx.fillText(subtitle, padding, 135);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '600 24px "Segoe UI", Arial, sans-serif';
+    ctx.fillText('Modelo', padding, tableTop + 46);
+    ctx.fillText('Precio', width - padding - 160, tableTop + 46);
+
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padding, tableTop + headerHeight);
+    ctx.lineTo(width - padding, tableTop + headerHeight);
+    ctx.stroke();
+
+    ctx.font = '400 22px "Segoe UI", Arial, sans-serif';
+    ctx.fillStyle = '#1f2937';
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+
+    const list = rows.length > 0 ? rows : [{ name: 'Sin productos activos', price: 0 }];
+    list.forEach((row, index) => {
+      const y = tableTop + headerHeight + rowHeight * index + 36;
+      ctx.fillText(row.name, padding, y);
+      ctx.textAlign = 'right';
+      ctx.fillText(row.price ? formatPrice(row.price) : '-', width - padding, y);
+      ctx.textAlign = 'left';
+
+      const lineY = tableTop + headerHeight + rowHeight * (index + 1);
+      ctx.beginPath();
+      ctx.moveTo(padding, lineY);
+      ctx.lineTo(width - padding, lineY);
+      ctx.stroke();
+    });
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'airpods.jpg';
+    link.click();
+  };
+
+  const generateIpadsJpg = () => {
+    const title = 'iPads Nuevos';
+    const subtitle = '';
+
+    const filtered = products.filter((product) => {
+      if (!product.active) return false;
+      if (!product.model || typeof product.model !== 'object') return false;
+      const model = product.model as IModel;
+      return (
+        model.brand === 'Apple' &&
+        model.category === 'Tablet' &&
+        model.name.toLowerCase().includes('ipad')
+      );
+    });
+
+    const grouped = new Map<string, { name: string; price: number }>();
+    filtered.forEach((product) => {
+      const model = product.model as IModel;
+      const key = model._id;
+      const existing = grouped.get(key);
+      if (!existing || product.price < existing.price) {
+        grouped.set(key, {
+          name: `${model.brand} ${model.name}`,
+          price: product.price,
+        });
+      }
+    });
+
+    const rows = Array.from(grouped.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, 'es', { sensitivity: 'base', numeric: true })
+    );
+
+    const width = 1200;
+    const rowHeight = 54;
+    const headerHeight = 70;
+    const padding = 60;
+    const tableTop = 210;
+    const tableHeight = headerHeight + Math.max(rows.length, 1) * rowHeight;
+    const height = tableTop + tableHeight + padding;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#f6f6f2';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '700 46px "Segoe UI", Arial, sans-serif';
+    ctx.fillText(title, padding, 90);
+
+    ctx.fillStyle = '#334155';
+    ctx.font = '400 26px "Segoe UI", Arial, sans-serif';
+    ctx.fillText(subtitle, padding, 135);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '600 24px "Segoe UI", Arial, sans-serif';
+    ctx.fillText('Modelo', padding, tableTop + 46);
+    ctx.fillText('Precio', width - padding - 160, tableTop + 46);
+
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padding, tableTop + headerHeight);
+    ctx.lineTo(width - padding, tableTop + headerHeight);
+    ctx.stroke();
+
+    ctx.font = '400 22px "Segoe UI", Arial, sans-serif';
+    ctx.fillStyle = '#1f2937';
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+
+    const list = rows.length > 0 ? rows : [{ name: 'Sin productos activos', price: 0 }];
+    list.forEach((row, index) => {
+      const y = tableTop + headerHeight + rowHeight * index + 36;
+      ctx.fillText(row.name, padding, y);
+      ctx.textAlign = 'right';
+      ctx.fillText(row.price ? formatPrice(row.price) : '-', width - padding, y);
+      ctx.textAlign = 'left';
+
+      const lineY = tableTop + headerHeight + rowHeight * (index + 1);
+      ctx.beginPath();
+      ctx.moveTo(padding, lineY);
+      ctx.lineTo(width - padding, lineY);
+      ctx.stroke();
+    });
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'ipads.jpg';
+    link.click();
+  };
+
+  const generatePixelWatchesJpg = () => {
+    const title = 'Pixel Watch Nuevos';
+    const subtitle = '';
+
+    const filtered = products.filter((product) => {
+      if (!product.active) return false;
+      if (!product.model || typeof product.model !== 'object') return false;
+      const model = product.model as IModel;
+      return (
+        model.brand === 'Google' &&
+        model.category === 'Watch' &&
+        model.name.toLowerCase().includes('pixel watch')
+      );
+    });
+
+    const grouped = new Map<string, { name: string; price: number }>();
+    filtered.forEach((product) => {
+      const model = product.model as IModel;
+      const key = model._id;
+      const existing = grouped.get(key);
+      if (!existing || product.price < existing.price) {
+        grouped.set(key, {
+          name: `${model.brand} ${model.name}`,
+          price: product.price,
+        });
+      }
+    });
+
+    const rows = Array.from(grouped.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, 'es', { sensitivity: 'base', numeric: true })
+    );
+
+    const width = 1200;
+    const rowHeight = 54;
+    const headerHeight = 70;
+    const padding = 60;
+    const tableTop = 210;
+    const tableHeight = headerHeight + Math.max(rows.length, 1) * rowHeight;
+    const height = tableTop + tableHeight + padding;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#f6f6f2';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '700 46px "Segoe UI", Arial, sans-serif';
+    ctx.fillText(title, padding, 90);
+
+    ctx.fillStyle = '#334155';
+    ctx.font = '400 26px "Segoe UI", Arial, sans-serif';
+    ctx.fillText(subtitle, padding, 135);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '600 24px "Segoe UI", Arial, sans-serif';
+    ctx.fillText('Modelo', padding, tableTop + 46);
+    ctx.fillText('Precio', width - padding - 160, tableTop + 46);
+
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padding, tableTop + headerHeight);
+    ctx.lineTo(width - padding, tableTop + headerHeight);
+    ctx.stroke();
+
+    ctx.font = '400 22px "Segoe UI", Arial, sans-serif';
+    ctx.fillStyle = '#1f2937';
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+
+    const list = rows.length > 0 ? rows : [{ name: 'Sin productos activos', price: 0 }];
+    list.forEach((row, index) => {
+      const y = tableTop + headerHeight + rowHeight * index + 36;
+      ctx.fillText(row.name, padding, y);
+      ctx.textAlign = 'right';
+      ctx.fillText(row.price ? formatPrice(row.price) : '-', width - padding, y);
+      ctx.textAlign = 'left';
+
+      const lineY = tableTop + headerHeight + rowHeight * (index + 1);
+      ctx.beginPath();
+      ctx.moveTo(padding, lineY);
+      ctx.lineTo(width - padding, lineY);
+      ctx.stroke();
+    });
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = 'pixel-watch.jpg';
+    link.click();
+  };
+
   const generateAllJpgs = () => {
     generateIphones85Jpg();
     generateIphonesPremiumJpg();
@@ -907,6 +1287,10 @@ export default function ProductsAdminPage() {
     generateSamsungSeminuevosJpg();
     generateSamsungNuevosJpg();
     generateGooglePixelsSeminuevosJpg();
+    generateAppleWatchesJpg();
+    generateAirpodsJpg();
+    generateIpadsJpg();
+    generatePixelWatchesJpg();
   };
 
   const handleSubmit = async (data: Record<string, unknown>) => {
