@@ -24,7 +24,7 @@ export async function PUT(
 
     // Validate specific fields
     validateString(client, 'client')
-    validatePositiveNumber(salePrice, 'salePrice')
+    validateNonNegativeNumber(salePrice, 'salePrice')
     if (interest !== undefined && interest !== null && interest !== '') {
       validateNonNegativeNumber(interest, 'interest')
     }
