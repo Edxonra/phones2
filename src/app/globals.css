@@ -482,6 +482,10 @@ main {
   overflow-y: auto;
 }
 
+.navbar-mobile-dropdown {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .navbar {
     flex-wrap: nowrap;
