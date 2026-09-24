@@ -1002,16 +1002,18 @@ main {
 
 .navbar-admin-link {
   text-decoration: none;
-  color: #fff;
-  background-color: #ff9800;
+  color: #333;
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
   font-weight: 500;
   padding: 8px 16px;
-  border-radius: 4px;
+  border-radius: 999px;
   transition: all 0.2s ease;
 }
 
 .navbar-admin-link:hover {
-  background-color: #f57c00;
+  background-color: #f7f9ff;
+  border-color: #dbe4ff;
 }
 
 .navbar-user {
