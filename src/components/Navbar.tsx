@@ -5,8 +5,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useIsAdmin } from '@/src/hooks/useIsAdmin'
-import { useCart } from '@/src/contexts/CartContext'
-import CartSidebar from '@/src/components/CartSidebar'
 import { CATEGORY_ITEM_OPTIONS, CATEGORY_OPTIONS } from '@/src/shared/model.enum'
 
 interface User {
@@ -52,9 +50,7 @@ export default function Navbar() {
   const [hasLoadedModels, setHasLoadedModels] = useState(false)
   const [openCategory, setOpenCategory] = useState<string | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [cartOpen, setCartOpen] = useState(false)
   const { isAdmin } = useIsAdmin()
-  const { totalItems } = useCart()
   const router = useRouter()
 
   useEffect(() => {
@@ -186,6 +182,32 @@ export default function Navbar() {
     setOpenCategory((current) => (current === category ? null : category))
   }
 
+  const renderAdminLinks = () => (
+    <>
+      <Link href="/admin/ventas" className="navbar-admin-link" onClick={() => setMobileMenuOpen(false)}>
+        Ventas
+      </Link>
+      <Link href="/admin/pagos" className="navbar-admin-link" onClick={() => setMobileMenuOpen(false)}>
+        Pagos
+      </Link>
+      <Link href="/admin/ganancias" className="navbar-admin-link" onClick={() => setMobileMenuOpen(false)}>
+        Ganancias
+      </Link>
+      <Link href="/admin/compras" className="navbar-admin-link" onClick={() => setMobileMenuOpen(false)}>
+        Compras
+      </Link>
+      <Link href="/admin/productos" className="navbar-admin-link" onClick={() => setMobileMenuOpen(false)}>
+        Productos
+      </Link>
+      <Link href="/admin/clientes" className="navbar-admin-link" onClick={() => setMobileMenuOpen(false)}>
+        Clientes
+      </Link>
+      <Link href="/admin/models" className="navbar-admin-link" onClick={() => setMobileMenuOpen(false)}>
+        Modelos
+      </Link>
+    </>
+  )
+
   useEffect(() => {
     fetchModels()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -212,7 +234,7 @@ export default function Navbar() {
           className="navbar-toggle"
           onClick={() => setMobileMenuOpen((open) => !open)}
           aria-expanded={mobileMenuOpen}
-          aria-label="Abrir menu de navegacion"
+          aria-label="Abrir menú de navegación"
         >
           <span className="navbar-toggle-icon" aria-hidden="true">
             <span />
@@ -221,6 +243,21 @@ export default function Navbar() {
           </span>
           <span className="navbar-toggle-text">Menu</span>
         </button>
+        <div className="navbar-mobile-dropdown" aria-hidden={!mobileMenuOpen}>
+          <div className="navbar-categories-list navbar-categories-mobile">
+            {allBrands.map((brand) => (
+              <button
+                key={brand}
+                type="button"
+                className="brand-button-mobile"
+                onClick={() => navigateToSearch(brand)}
+              >
+                {brand}
+              </button>
+            ))}
+          </div>
+          {isAdmin && <div className="navbar-admin-menu navbar-admin-menu-mobile">{renderAdminLinks()}</div>}
+        </div>
         <div className="navbar-categories-list navbar-categories-desktop">
           {groupedCategories.map((item) => (
             <div
@@ -273,18 +310,6 @@ export default function Navbar() {
                 )}
               </div>
             </div>
-          ))}
-        </div>
-        <div className="navbar-categories-list navbar-categories-mobile">
-          {allBrands.map((brand) => (
-            <button
-              key={brand}
-              type="button"
-              className="brand-button-mobile"
-              onClick={() => navigateToSearch(brand)}
-            >
-              {brand}
-            </button>
           ))}
         </div>
       </div>
@@ -342,105 +367,12 @@ export default function Navbar() {
 
       <div className="navbar-right">
         {isAdmin && (
-          <div className="navbar-admin-menu">
-            <Link
-              href="/admin/ventas"
-              className="navbar-admin-link"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Ventas
-            </Link>
-            <Link
-              href="/admin/pagos"
-              className="navbar-admin-link"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Pagos
-            </Link>
-            <Link
-              href="/admin/ganancias"
-              className="navbar-admin-link"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Ganancias
-            </Link>
-            <Link
-              href="/admin/compras"
-              className="navbar-admin-link"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Compras
-            </Link>
-            <Link
-              href="/admin/productos"
-              className="navbar-admin-link"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Productos
-            </Link>
-            <Link
-              href="/admin/clientes"
-              className="navbar-admin-link"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Clientes
-            </Link>
-            <Link
-              href="/admin/models"
-              className="navbar-admin-link"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Modelos
-            </Link>
-          </div>
+          <div className="navbar-admin-menu navbar-admin-menu-desktop">{renderAdminLinks()}</div>
         )}
 
         <div className="navbar-actions">
           {isLoggedIn && user ? (
             <>
-              <button
-                onClick={() => setCartOpen(true)}
-                className="navbar-cart-button"
-                style={{
-                  position: 'relative',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '4px',
-                  fontSize: '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '36px',
-                  height: '36px',
-                  marginRight: '12px',
-                }}
-                title="Ver carrito"
-              >
-                🛒
-                {totalItems > 0 && (
-                  <span
-                    style={{
-                      position: 'absolute',
-                      top: '-4px',
-                      right: '-4px',
-                      backgroundColor: '#ef4444',
-                      color: '#fff',
-                      borderRadius: '50%',
-                      width: '20px',
-                      height: '20px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      border: '2px solid white',
-                    }}
-                  >
-                    {totalItems > 9 ? '9+' : totalItems}
-                  </span>
-                )}
-              </button>
               <div className="navbar-user-menu">
                 <button
                   className="navbar-avatar"
@@ -466,49 +398,6 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <button
-                onClick={() => setCartOpen(true)}
-                className="navbar-cart-button"
-                style={{
-                  position: 'relative',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '4px',
-                  fontSize: '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '36px',
-                  height: '36px',
-                  marginRight: '12px',
-                }}
-                title="Ver carrito"
-              >
-                🛒
-                {totalItems > 0 && (
-                  <span
-                    style={{
-                      position: 'absolute',
-                      top: '-4px',
-                      right: '-4px',
-                      backgroundColor: '#ef4444',
-                      color: '#fff',
-                      borderRadius: '50%',
-                      width: '20px',
-                      height: '20px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '11px',
-                      fontWeight: '700',
-                      border: '2px solid white',
-                    }}
-                  >
-                    {totalItems > 9 ? '9+' : totalItems}
-                  </span>
-                )}
-              </button>
               <Link
                 href="/login"
                 className="navbar-login"
@@ -524,7 +413,6 @@ export default function Navbar() {
           )}
         </div>
       </div>
-      <CartSidebar isOpen={cartOpen} onClose={() => setCartOpen(false)} />
     </nav>
   )
 }

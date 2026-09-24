@@ -501,6 +501,28 @@ main {
     flex-direction: row-reverse;
   }
 
+  .navbar-mobile-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    width: min(320px, calc(100vw - 16px));
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    background: #ffffff;
+    border: 1px solid #e6e6e6;
+    border-radius: 16px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.14);
+    z-index: 1200;
+    max-height: calc(100vh - 120px);
+    overflow: auto;
+  }
+
+  .navbar.navbar-open .navbar-mobile-dropdown {
+    display: flex;
+  }
+
   .navbar-toggle {
     display: inline-flex;
     align-items: center;
@@ -576,28 +598,11 @@ main {
   }
 
   .navbar-categories-mobile {
-    width: 100%;
-    justify-content: flex-start;
     flex-direction: column;
     gap: 8px;
-    flex-wrap: nowrap;
+    width: 100%;
     align-items: stretch;
-    display: none;
-    order: 3;
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    pointer-events: none;
-    transition: max-height 0.2s ease, opacity 0.2s ease;
-  }
-
-  .navbar.navbar-open .navbar-categories-mobile {
     display: flex;
-    max-height: 420px;
-    opacity: 1;
-    pointer-events: auto;
-    margin-top: 8px;
-    overflow: auto;
   }
 
   .mobile-category-group {
@@ -661,27 +666,47 @@ main {
   }
 
   .navbar-admin-menu {
-    width: 100%;
     flex-wrap: wrap;
     gap: 8px;
-    display: none;
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    pointer-events: none;
-    transition: max-height 0.2s ease, opacity 0.2s ease;
-  }
-
-  .navbar.navbar-open .navbar-admin-menu {
     display: flex;
-    max-height: 420px;
-    opacity: 1;
-    pointer-events: auto;
+    width: 100%;
   }
 
-  .navbar-admin-link {
-    flex: 1 1 calc(50% - 8px);
-    text-align: center;
+  .navbar-admin-menu-desktop {
+    display: none !important;
+  }
+
+  .navbar-admin-menu-mobile {
+    flex-direction: column;
+    display: flex;
+    gap: 0;
+    background: #ffffff;
+    border: 1px solid #e6e6e6;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .navbar-admin-menu-mobile .navbar-admin-link {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    text-decoration: none;
+    font-weight: 500;
+    text-align: left;
+    box-shadow: none;
+  }
+
+  .navbar-admin-menu-mobile .navbar-admin-link:hover {
+    background: #f7f9ff;
+  }
+
+  .navbar-admin-menu-mobile .navbar-admin-link:last-child {
+    border-bottom: none;
   }
 
   .category-item {

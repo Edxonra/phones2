@@ -1,7 +1,5 @@
 'use client'
 
-import { useCart } from '@/src/contexts/CartContext'
-
 interface ProductModel {
   _id?: string
   name?: string
@@ -35,24 +33,6 @@ const formatPrice = (price: number) => {
 }
 
 export default function ProductVariantsClient({ relatedProducts }: ProductVariantsClientProps) {
-  const { addItem } = useCart()
-
-  const handleAddToCart = (item: ProductVariant) => {
-    const model = item.model
-    addItem({
-      productId: item._id,
-      productUrl: `/productos/${item._id}`,
-      modelName: model?.name || '',
-      modelBrand: model?.brand || '',
-      modelImage: model?.image,
-      storage: item.storage,
-      color: item.color,
-      batteryHealth: item.batteryHealth,
-      condition: item.condition || '',
-      price: item.price,
-    })
-  }
-
   return (
     <section className="product-variants">
       <h2 className="product-variants-title">Opciones disponibles</h2>
@@ -89,23 +69,6 @@ export default function ProductVariantsClient({ relatedProducts }: ProductVarian
                 <span className="product-variant-value">{item.description}</span>
               </div>
             )}
-            <button
-              onClick={() => handleAddToCart(item)}
-              style={{
-                width: '100%',
-                marginTop: '12px',
-                padding: '12px',
-                backgroundColor: '#3b82f6',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: '600',
-                cursor: 'pointer',
-              }}
-            >
-              Añadir al carrito
-            </button>
           </div>
         ))}
       </div>
