@@ -488,28 +488,26 @@ main {
 
 @media (max-width: 900px) {
   .navbar {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     padding: 8px 6px;
     gap: 6px;
   }
 
   .navbar-left {
-    width: auto;
+    width: 100%;
     justify-content: flex-start;
     position: relative;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 8px;
     padding: 0;
     order: 1;
-    flex-shrink: 0;
-    flex-direction: row-reverse;
+    flex-shrink: 1;
+    flex-direction: row;
   }
 
   .navbar-mobile-dropdown {
-    position: absolute;
-    top: calc(100% + 10px);
-    left: 0;
-    width: min(320px, calc(100vw - 16px));
+    position: static;
+    width: 100%;
     display: none;
     flex-direction: column;
     gap: 12px;
@@ -519,8 +517,9 @@ main {
     border-radius: 16px;
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.14);
     z-index: 1200;
-    max-height: calc(100vh - 120px);
-    overflow: auto;
+    max-height: none;
+    overflow: visible;
+    margin-top: 6px;
   }
 
   .navbar.navbar-open .navbar-mobile-dropdown {
@@ -687,7 +686,13 @@ main {
     background: #ffffff;
     border: 1px solid #e6e6e6;
     border-radius: 12px;
-    overflow: hidden;
+    overflow: visible;
+    width: 100%;
+  }
+
+  .navbar-mobile-dropdown .navbar-admin-menu-mobile {
+    flex-wrap: nowrap;
+    align-items: stretch;
   }
 
   .navbar-admin-menu-mobile .navbar-admin-link {
