@@ -483,7 +483,7 @@ export default function PaymentsAdminPage() {
         </button>
 
         {isFormVisible && (
-          <form onSubmit={handleSubmit} className="admin-form">
+          <form onSubmit={handleSubmit} className="admin-form payment-form">
             <div className="form-row">
               <div className="form-group">
                 <label>Venta *</label>

@@ -459,6 +459,7 @@ export default function SalesAdminPage() {
 
         {isFormVisible && (
           <AdminForm
+            className="sales-form"
             fields={formFields}
             initialValues={selectedSale ? {
               product: selectedSale.product?._id,

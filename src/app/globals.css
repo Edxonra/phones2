@@ -1531,13 +1531,21 @@ main {
 
 .form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 15px;
   margin-bottom: 15px;
 }
 
+@media (max-width: 700px) {
+  .admin-form.sales-form .form-row,
+  .admin-form.payment-form .form-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .form-row .form-group {
   margin-bottom: 0;
+  min-width: 0;
 }
 
 .form-group {
@@ -1585,6 +1593,11 @@ main {
   border-radius: 4px;
   font-size: 14px;
   transition: border-color 0.2s ease;
+}
+
+.form-group select {
+  width: 100%;
+  min-width: 0;
 }
 
 .form-group input:focus {

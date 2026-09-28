@@ -18,15 +18,6 @@ export async function GET() {
       { $unwind: '$product' },
       { $match: { 'product.active': true } },
       {
-        $group: {
-          _id: '$product._id',
-          count: { $sum: 1 },
-          lastSoldAt: { $max: '$saleDate' },
-          product: { $first: '$product' },
-        },
-      },
-      { $sort: { count: -1, lastSoldAt: -1 } },
-      {
         $lookup: {
           from: 'models',
           localField: 'product.model',
@@ -35,6 +26,17 @@ export async function GET() {
         },
       },
       { $unwind: '$model' },
+      { $match: { 'model.category': { $nin: ['Accesorios', 'Audio'] } } },
+      {
+        $group: {
+          _id: '$product._id',
+          count: { $sum: 1 },
+          lastSoldAt: { $max: '$saleDate' },
+          product: { $first: '$product' },
+          model: { $first: '$model' },
+        },
+      },
+      { $sort: { count: -1, lastSoldAt: -1 } },
       { $limit: 5 },
       {
         $project: {

@@ -29,6 +29,7 @@ interface AdminFormProps {
   cancelLabel?: string
   loading?: boolean
   isEditing?: boolean
+  className?: string
 }
 
 export default function AdminForm({
@@ -40,6 +41,7 @@ export default function AdminForm({
   cancelLabel: _cancelLabel = 'Cancelar', // eslint-disable-line @typescript-eslint/no-unused-vars
   loading = false,
   isEditing: _isEditing = false, // eslint-disable-line @typescript-eslint/no-unused-vars
+  className = '',
 }: AdminFormProps) {
   const [formData, setFormData] = React.useState<Record<string, unknown>>({})
   const [errors, setErrors] = React.useState<Record<string, string>>({})
@@ -114,7 +116,7 @@ export default function AdminForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="admin-form">
+    <form onSubmit={handleSubmit} className={`admin-form ${className}`.trim()}>
       <div className="form-row">
         {fields.map((field) => {
           const key = field.name
